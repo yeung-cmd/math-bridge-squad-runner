@@ -151,4 +151,5 @@ button:focus-visible { outline: 3px solid #67e8f9; outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .speed-streak, .reward-spark { display: none; }
+  .countdown-pop, .feedback-pop, .page-enter { animation: none !important; opacity: 1; }
 }
