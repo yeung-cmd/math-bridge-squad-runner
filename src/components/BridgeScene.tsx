@@ -1,11 +1,13 @@
 import React from 'react';
+import { motion, useTransform, MotionValue } from 'motion/react';
 import { Lane, QuestionItem, WeaponInfo } from '../types/game';
 
 interface BridgeSceneProps {
   question: QuestionItem;
   troops: number;
   selectedLane: Lane | null;
-  gateProgress: number; // 0.0 (far horizon) -> 1.0 (reaches squad)
+  paused: boolean;
+  gateProgress: MotionValue<number>; // 0.0 (far horizon) -> 1.0 (reaches squad)
   isAdvancing: boolean;
   impactResult: 'CORRECT' | 'WRONG' | null;
   weapon: WeaponInfo;
@@ -13,7 +15,8 @@ interface BridgeSceneProps {
   floatingFeedback: { text: string; subtext?: string; isPositive: boolean } | null;
 }
 
-export const BridgeScene: React.FC<BridgeSceneProps> = ({
+export const BridgeScene = React.memo(function BridgeScene({
+  paused,
   question,
   troops,
   selectedLane,
@@ -23,7 +26,7 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
   weapon,
   onSelectLane,
   floatingFeedback
-}) => {
+}: BridgeSceneProps) {
   // Compute visible soldiers in formation (between 1 and 25 sprites arranged in neat rows)
   const visibleCount = Math.max(1, Math.min(25, troops));
 
@@ -41,37 +44,11 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
   const squadOffsetX =
     selectedLane === 'LEFT' ? -68 : selectedLane === 'RIGHT' ? 68 : 0;
 
-  // Perspective interpolation for the approaching gates based on gateProgress (0 -> 1)
-  // At progress=0 (just below question banner): top = 26%, scale = 0.52, width = 46%
-  // At progress=1 (reaching the running soldiers): top = 53%, scale = 1.08, width = 88%
-  const clampedP = Math.max(0, Math.min(1.05, gateProgress));
-  // Slight perspective curve so it accelerates visually as it gets closer to the camera
-  const visualP = Math.pow(clampedP, 1.15);
-  const gateTopPercent = 26.5 + visualP * 26.5;
-  const gateScale = 0.54 + visualP * 0.54;
-  const gateSpreadPercent = 48 + visualP * 38;
-
-  // Compute scrolling horizontal bridge planks using gateProgress * speed so the bridge visibly scrolls!
-  const scrollPhase = (gateProgress * 18) % 1;
-  const plankPositions = [0, 0.16, 0.32, 0.48, 0.64, 0.8, 0.96].map((base) => {
-    const t = (base + scrollPhase) % 1;
-    // Perspective mapping from y=165 (horizon) to y=700 (bottom)
-    const perspT = Math.pow(t, 1.45);
-    const y = 165 + perspT * 535;
-    // Bridge deck left/right edges at height y:
-    // At y=150: xLeft=172, xRight=228
-    // At y=700: xLeft=54, xRight=346
-    const ratio = (y - 150) / 550;
-    const xLeft = 172 - ratio * (172 - 54);
-    const xRight = 228 + ratio * (346 - 228);
-    // Railing post outer positions
-    const railLeft = 158 - ratio * (158 - 24);
-    const railRight = 242 + ratio * (376 - 242);
-    return { y, xLeft, xRight, railLeft, railRight, ratio };
-  });
+  const gateY = useTransform(gateProgress, p => `${Math.pow(p, 1.15) * 26.5}%`);
+  const gateScale = useTransform(gateProgress, p => 0.54 + Math.pow(p, 1.15) * 0.54);
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-[#38A7F8]">
+    <div data-paused={paused} className={`bridge-scene absolute inset-0 overflow-hidden select-none bg-[#38A7F8] ${impactResult === 'WRONG' ? 'impact-shake' : ''}`}>
       {/* SVG Perspective Ocean & Scrolling Bridge Deck */}
       <svg
         viewBox="0 0 400 700"
@@ -128,40 +105,7 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
 
         {/* Continuously Scrolling Perspective Bridge Planks & Railing Ties */}
         <g>
-          {plankPositions.map((p, idx) => (
-            <React.Fragment key={idx}>
-              {/* Bridge Deck Plank Line */}
-              <line
-                x1={p.xLeft}
-                y1={p.y}
-                x2={p.xRight}
-                y2={p.y}
-                stroke="#9C8062"
-                strokeWidth={1 + p.ratio * 2}
-                opacity={0.35 + p.ratio * 0.45}
-              />
-              {/* Left Curb Marker */}
-              <line
-                x1={p.railLeft}
-                y1={p.y}
-                x2={p.xLeft}
-                y2={p.y}
-                stroke="#5E4731"
-                strokeWidth={1.5 + p.ratio * 2.5}
-                opacity={0.6}
-              />
-              {/* Right Curb Marker */}
-              <line
-                x1={p.xRight}
-                y1={p.y}
-                x2={p.railRight}
-                y2={p.y}
-                stroke="#5E4731"
-                strokeWidth={1.5 + p.ratio * 2.5}
-                opacity={0.6}
-              />
-            </React.Fragment>
-          ))}
+          {[0, 0.16, 0.32, 0.48, 0.64, 0.8, 0.96].map(base => <BridgePlank key={base} base={base} progress={gateProgress} />)}
         </g>
 
         {/* Animated Scrolling Center Lane Divider */}
@@ -179,17 +123,8 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
       </svg>
 
       {/* DYNAMICALLY APPROACHING NUMBERED GATES (Left & Right) */}
-      <div
-        style={{
-          top: `${gateTopPercent}%`,
-          transform: `translateY(-50%) scale(${gateScale})`
-        }}
-        className="absolute left-0 right-0 flex justify-center items-center pointer-events-auto z-10 will-change-transform"
-      >
-        <div
-          style={{ width: `${gateSpreadPercent}%` }}
-          className="max-w-[340px] flex justify-between items-center px-2"
-        >
+      <motion.div style={{ y: gateY }} className="absolute inset-0 pointer-events-none z-10 will-change-transform">
+        <motion.div style={{ scale: gateScale }} className="absolute top-[26.5%] left-[7%] w-[86%] flex justify-between items-center px-2 pointer-events-auto will-change-transform">
           {/* LEFT GATE */}
           <button
             type="button"
@@ -255,12 +190,20 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
               </span>
             </div>
           </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
+
+      {isAdvancing && <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden" aria-hidden="true">
+        {Array.from({ length: 10 }, (_, i) => <span key={i} className="speed-streak" style={{ left: `${5 + i * 10}%`, animationDelay: `${i * -0.07}s` }} />)}
+      </div>}
+      {impactResult && <div key={question.id} className="absolute inset-0 pointer-events-none z-20" aria-hidden="true">
+        <div className={`impact-ring ${impactResult === 'CORRECT' ? 'text-emerald-200' : 'text-rose-300'}`} />
+        {impactResult === 'CORRECT' && Array.from({ length: 18 }, (_, i) => <span key={i} className="reward-spark" style={{ '--dx': `${Math.cos(i * Math.PI / 9) * (85 + i % 3 * 30)}px`, '--dy': `${Math.sin(i * Math.PI / 9) * 125}px`, backgroundColor: ['#fde047', '#6ee7b7', '#fff'][i % 3], animationDelay: `${i % 3 * .04}s` } as React.CSSProperties} />)}
+      </div>}
 
       {/* Floating Impact Feedback (+Troops / Weapon Upgrade / Penalty) */}
       {floatingFeedback && (
-        <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center animate-bounce">
+        <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center feedback-pop">
           <div
             className={`px-4 py-1.5 rounded-full font-display font-black text-xl shadow-lg border-2 ${
               floatingFeedback.isPositive
@@ -281,9 +224,9 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
       {/* THE BLUE SOLDIER SQUAD FORMATION (Actively Running Forward on the Bridge!) */}
       <div
         style={{
-          transform: `translate3d(${squadOffsetX}px, ${isAdvancing ? '-24px' : '0px'}, 0)`
+          transform: `translate3d(calc(-50% + ${squadOffsetX}px), ${isAdvancing ? '-24px' : '0px'}, 0)`
         }}
-        className="absolute top-[55%] left-1/2 -translate-x-1/2 z-20 flex flex-col items-center transition-transform duration-200 ease-out pointer-events-none"
+        className="absolute top-[52%] left-1/2 z-20 flex flex-col items-center transition-transform duration-200 ease-out pointer-events-none"
       >
         {/* Top Troop Counter Pill Badge ("22") */}
         <div className="relative z-30 mb-[-3px] px-3.5 py-0.5 rounded-full bg-[#242F3E]/95 border border-white/30 shadow-md flex items-center justify-center">
@@ -313,7 +256,8 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
                   return (
                     <div
                       key={soldierIdx}
-                      className="relative w-7 h-11 flex flex-col items-center"
+                      className="soldier-bob relative w-7 h-11 flex flex-col items-center"
+                      style={{ animationDelay: `${(rowIndex * 3 + soldierIdx) * -0.045}s` }}
                     >
                       {/* Upright Glowing Cyan Spear for Back-Row Soldiers */}
                       {hasSpear && (
@@ -370,4 +314,21 @@ export const BridgeScene: React.FC<BridgeSceneProps> = ({
       </div>
     </div>
   );
-};
+});
+
+// Motion values update the SVG directly without redrawing the soldiers or controls.
+function BridgePlank({ base, progress }: { base: number; progress: MotionValue<number> }) {
+  const ratio = useTransform(progress, p => (15 + Math.pow((base + p * 18) % 1, 1.45) * 535) / 550);
+  const y = useTransform(ratio, r => 150 + r * 550);
+  const left = useTransform(ratio, r => 172 - r * 118);
+  const right = useTransform(ratio, r => 228 + r * 118);
+  const railLeft = useTransform(ratio, r => 158 - r * 134);
+  const railRight = useTransform(ratio, r => 242 + r * 134);
+  const width = useTransform(ratio, r => 1 + r * 2);
+  const opacity = useTransform(ratio, r => .35 + r * .45);
+  return <g>
+    <motion.line x1={left} x2={right} y1={y} y2={y} stroke="#9C8062" strokeWidth={width} opacity={opacity} />
+    <motion.line x1={railLeft} x2={left} y1={y} y2={y} stroke="#5E4731" strokeWidth={width} opacity=".6" />
+    <motion.line x1={right} x2={railRight} y1={y} y2={y} stroke="#5E4731" strokeWidth={width} opacity=".6" />
+  </g>;
+}

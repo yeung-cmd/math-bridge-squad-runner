@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useMotionValue } from 'motion/react';
+import { SettingsScreen } from './components/SettingsScreen';
 import {
   AnswerRecord,
   GameState,
@@ -15,22 +17,16 @@ import {
 import {
   generateQuestionSet,
   getWeaponForCorrectCount,
-  QUESTION_MODES,
-  WEAPON_TIERS
+  QUESTION_MODES
 } from './utils/questionGenerator';
 import { soundFX } from './utils/sound';
 import { BridgeScene } from './components/BridgeScene';
 import { BossBattleView } from './components/BossBattleView';
 import { SummaryView } from './components/SummaryView';
-import { PauseModal, QUESTION_TIME_OPTIONS } from './components/PauseModal';
+import { PauseModal } from './components/PauseModal';
 import {
   Volume2,
   VolumeX,
-  RotateCcw,
-  Sparkles,
-  Trophy,
-  Check,
-  Clock,
   FastForward
 } from 'lucide-react';
 
@@ -44,6 +40,8 @@ const DEFAULT_PROGRESS: ProgressMap = {
 };
 
 export default function App() {
+  const [screen, setScreen] = useState<'SETUP' | 'GAME'>('SETUP');
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [selectedMode, setSelectedMode] = useState<QuestionModeId>('ADD_20');
   const [gameState, setGameState] = useState<GameState>('PLAYING');
   const [isPaused, setIsPaused] = useState<boolean>(false);
@@ -66,7 +64,8 @@ export default function App() {
   const [selectedLane, setSelectedLane] = useState<Lane>('LEFT');
 
   // Gate continuous approach progress (0.0 at horizon -> 1.0 when reaching soldiers)
-  const [gateProgress, setGateProgress] = useState<number>(0.12);
+  const gateProgress = useMotionValue(0);
+  const [questionSecondsLeft, setQuestionSecondsLeft] = useState(8);
   // Whether the player hit "前進" to turbo-sprint into the gate
   const [isAdvancing, setIsAdvancing] = useState<boolean>(false);
   const [impactResult, setImpactResult] = useState<'CORRECT' | 'WRONG' | null>(null);
@@ -96,12 +95,6 @@ export default function App() {
   const currentModeConfig = QUESTION_MODES[selectedMode];
   const currentQuestion = questions[currentIdx] || questions[0];
   const currentWeapon = getWeaponForCorrectCount(correctCount);
-
-  // Remaining seconds for the current approaching gate
-  const questionSecondsLeft = Math.max(
-    0,
-    (1 - Math.min(1, gateProgress)) * questionDuration
-  );
 
   // Save progress helper
   const updateModeProgress = useCallback(
@@ -145,85 +138,20 @@ export default function App() {
     setQuestions(newQuestions);
     setCurrentIdx(0);
     setTroops(cfg.initialTroops);
-    setScore(100);
-    setCorrectCount(4); // Equip 重裝散彈槍 by default
+    setScore(0);
+    setCorrectCount(0);
     setSelectedLane('LEFT');
-    setGateProgress(0.05);
+    gateProgress.set(0);
+    setQuestionSecondsLeft(questionDuration);
     setIsAdvancing(false);
     setImpactResult(null);
     setFloatingFeedback(null);
     setRecords([]);
     setGameState('PLAYING');
     setIsPaused(false);
-  }, []);
-
-  // Load the exact screenshot state ("Q 5/10", "8 的前一個數是？", Troops 22, Score 508, 重裝散彈槍)
-  const loadScreenshotReplicaState = useCallback(() => {
-    if (impactTimeoutRef.current) {
-      window.clearTimeout(impactTimeoutRef.current);
-    }
-    hasTriggeredImpactRef.current = false;
-    const newQuestions = generateQuestionSet('NUMBER_SENSE', 10);
-    newQuestions[4] = {
-      id: 5,
-      index: 5,
-      prompt: '8 的前一個數是？',
-      leftOption: 8,
-      rightOption: 7,
-      correctLane: 'RIGHT',
-      correctAnswer: 7,
-      wrongAnswer: 8,
-      rewardTroops: 3,
-      penaltyTroops: 2
-    };
-    setSelectedMode('NUMBER_SENSE');
-    setQuestions(newQuestions);
-    setCurrentIdx(4); // Q 5/10
-    setTroops(22);
-    setScore(508);
-    setCorrectCount(4); // 重裝散彈槍
-    setSelectedLane('RIGHT'); // Hand pointing at 7 on the right
-    setGateProgress(0.32); // Positioned right at the screenshot gate distance
-    setIsAdvancing(false);
-    setImpactResult(null);
-    setFloatingFeedback(null);
-    setRecords([
-      {
-        questionIndex: 1,
-        prompt: '5 的後一個數是？',
-        chosenAnswer: 6,
-        correctAnswer: 6,
-        isCorrect: true,
-        troopsDelta: 2
-      },
-      {
-        questionIndex: 2,
-        prompt: '10 的前一個數是？',
-        chosenAnswer: 9,
-        correctAnswer: 9,
-        isCorrect: true,
-        troopsDelta: 2
-      },
-      {
-        questionIndex: 3,
-        prompt: '12 的後一個數是？',
-        chosenAnswer: 13,
-        correctAnswer: 13,
-        isCorrect: true,
-        troopsDelta: 2
-      },
-      {
-        questionIndex: 4,
-        prompt: '6 的前一個數是？',
-        chosenAnswer: 5,
-        correctAnswer: 5,
-        isCorrect: true,
-        troopsDelta: 2
-      }
-    ]);
-    setGameState('PLAYING');
-    setIsPaused(false);
-  }, []);
+    setScreen('GAME');
+    setCountdown(3);
+  }, [gateProgress, questionDuration]);
 
   // Resolve impact when gateProgress reaches 1.0 (soldiers smash through the gate!)
   const resolveGateImpact = useCallback(() => {
@@ -291,82 +219,84 @@ export default function App() {
       }
     ]);
 
-    // After short celebration/feedback, spawn the next gate at the horizon!
+  }, [selectedLane, currentQuestion, correctCount, currentIdx, questions.length]);
+
+  // Feedback is held while paused; leaving the game cancels pending transitions.
+  useEffect(() => {
+    if (!impactResult || isPaused || screen !== 'GAME') return;
     impactTimeoutRef.current = window.setTimeout(() => {
       setIsAdvancing(false);
       setImpactResult(null);
       setFloatingFeedback(null);
-
-      if (currentIdx + 1 >= questions.length) {
-        setGameState('BOSS_FIGHT');
-      } else {
+      if (currentIdx + 1 >= questions.length) setGameState('BOSS_FIGHT');
+      else {
         hasTriggeredImpactRef.current = false;
-        setGateProgress(0.04);
+        gateProgress.set(0);
+        setQuestionSecondsLeft(questionDuration);
         setCurrentIdx((idx) => idx + 1);
       }
-    }, 580);
-  }, [selectedLane, currentQuestion, correctCount, currentIdx, questions.length]);
+    }, 1000);
+    return () => window.clearTimeout(impactTimeoutRef.current!);
+  }, [impactResult, isPaused, screen, currentIdx, questions.length, gateProgress, questionDuration]);
 
-  // Continuous 60fps running & gate approach loop
   useEffect(() => {
-    if (gameState !== 'PLAYING' || isPaused || impactResult !== null) return;
+    if (countdown === null || isPaused || screen !== 'GAME') return;
+    const timer = window.setTimeout(() => setCountdown(countdown === 1 ? null : countdown - 1), 900);
+    return () => window.clearTimeout(timer);
+  }, [countdown, isPaused, screen]);
 
+  useEffect(() => {
+    const onVisibility = () => { if (document.hidden && screen === 'GAME' && gameState === 'PLAYING') setIsPaused(true); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [screen, gameState]);
+
+  // Animate motion values each frame; only update the React countdown ten times a second.
+  useEffect(() => {
+    if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || impactResult) return;
     let lastTime = performance.now();
+    let lastHudTime = 0;
     let animId: number;
-
     const tick = (now: number) => {
-      const dt = (now - lastTime) / 1000;
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
-
-      setGateProgress((prev) => {
-        if (prev >= 1) return 1;
-        // Normal running speed takes `questionDuration` seconds; clicking "前進" sprints 6x faster!
-        const speed = isAdvancing ? 2.4 : 1 / questionDuration;
-        const next = prev + dt * speed;
-        if (next >= 1) {
-          return 1;
-        }
-        return next;
-      });
-
+      const next = Math.min(1, gateProgress.get() + dt * (isAdvancing ? 2.4 : 1 / questionDuration));
+      gateProgress.set(next);
+      if (now - lastHudTime >= 100 || next === 1) {
+        setQuestionSecondsLeft((1 - next) * questionDuration);
+        lastHudTime = now;
+      }
+      if (next === 1) { resolveGateImpact(); return; }
       animId = requestAnimationFrame(tick);
     };
-
     animId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animId);
-  }, [gameState, isPaused, impactResult, isAdvancing, questionDuration]);
-
-  // Trigger gate impact as soon as gateProgress reaches 1
-  useEffect(() => {
-    if (gateProgress >= 1 && gameState === 'PLAYING' && !impactResult) {
-      resolveGateImpact();
-    }
-  }, [gateProgress, gameState, impactResult, resolveGateImpact]);
+  }, [screen, countdown, gameState, isPaused, impactResult, isAdvancing, questionDuration, gateProgress, resolveGateImpact]);
 
   // Clicking "前進" turbo-sprints the squad through the gate immediately
   const handleAdvance = useCallback(() => {
-    if (gameState !== 'PLAYING' || isPaused || isAdvancing || impactResult) return;
+    if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || isAdvancing || impactResult) return;
     soundFX.playAdvanceCharge();
     setIsAdvancing(true);
-  }, [gameState, isPaused, isAdvancing, impactResult]);
+  }, [screen, countdown, gameState, isPaused, isAdvancing, impactResult]);
 
   // Selecting Left or Right lane
   const handleSelectLane = useCallback(
     (lane: Lane) => {
-      if (gameState !== 'PLAYING' || isPaused || impactResult) return;
+      if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || impactResult) return;
       soundFX.playLaneSelect();
       setSelectedLane(lane);
       if (autoAdvanceOnSelect) {
         setIsAdvancing(true);
       }
     },
-    [gameState, isPaused, impactResult, autoAdvanceOnSelect]
+    [screen, countdown, gameState, isPaused, impactResult, autoAdvanceOnSelect]
   );
 
   // Keyboard navigation (Left/Right arrows to select lane, Space/Enter to turbo-sprint)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (gameState !== 'PLAYING' || isPaused || impactResult) return;
+      if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || impactResult) return;
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         e.preventDefault();
         handleSelectLane('LEFT');
@@ -380,7 +310,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [gameState, isPaused, impactResult, handleSelectLane, handleAdvance]);
+  }, [screen, countdown, gameState, isPaused, impactResult, handleSelectLane, handleAdvance]);
 
   const handleToggleMute = () => {
     soundFX.muted = !muted;
@@ -409,192 +339,37 @@ export default function App() {
 
   const timeProgressPercent = Math.max(
     0,
-    Math.min(100, (1 - gateProgress) * 100)
+    Math.min(100, (questionSecondsLeft / questionDuration) * 100)
   );
 
+  const returnToSettings = () => {
+    setScreen('SETUP');
+    setIsPaused(false);
+    setCountdown(null);
+    setImpactResult(null);
+  };
+
+  if (screen === 'SETUP') return <SettingsScreen
+    selectedMode={selectedMode} onSelectMode={setSelectedMode}
+    questionDuration={questionDuration} onDurationChange={setQuestionDuration}
+    muted={muted} onToggleMute={handleToggleMute}
+    autoAdvance={autoAdvanceOnSelect} onToggleAutoAdvance={() => setAutoAdvanceOnSelect(v => !v)}
+    progress={progress} onStart={() => startNewGame(selectedMode)} />;
+
   return (
-    <div className="min-h-screen w-full bg-[#0B1320] text-white flex flex-col lg:flex-row items-center justify-center lg:gap-8 p-2 sm:p-4">
-      {/* LEFT / TOP MODE & RUNNING TIME SELECTOR PANEL */}
-      <aside className="w-full max-w-[420px] lg:max-w-[365px] mb-2.5 lg:mb-0 flex flex-col gap-3">
-        {/* Brand & Controls Card */}
-        <div className="bg-[#152238] border-2 border-white/20 rounded-2xl p-3.5 sm:p-4 shadow-xl">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h1 className="text-lg sm:text-xl font-black tracking-tight text-white">
-                數學橋樑軍團大作戰
-              </h1>
-              <p className="text-xs text-slate-300 mt-0.5">
-                士兵持續向前奔跑 · 限時揀選正確答案跑道
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              aria-label="切換音效"
-              className="p-2 rounded-xl bg-[#1E304E] hover:bg-[#283F66] border border-white/20 text-amber-300 cursor-pointer shrink-0"
-            >
-              {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-            </button>
-          </div>
-
-          {/* Per-Question Running Decision Time Setting (5s / 8s / 10s / 15s) */}
-          <div className="mt-3 pt-2.5 border-t border-white/10">
-            <div className="flex items-center justify-between text-xs font-bold text-amber-300 mb-1.5">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                每題跑動選擇時間設定：
-              </span>
-              <span className="text-white font-black tabular-nums">
-                {questionDuration} 秒 / 題
-              </span>
-            </div>
-            <div className="grid grid-cols-4 gap-1.5">
-              {QUESTION_TIME_OPTIONS.map((sec) => {
-                const active = questionDuration === sec;
-                return (
-                  <button
-                    key={sec}
-                    type="button"
-                    onClick={() => {
-                      setQuestionDuration(sec);
-                      setGateProgress(0.05);
-                    }}
-                    className={`py-1.5 rounded-xl font-display font-black text-xs border-2 transition-all cursor-pointer ${
-                      active
-                        ? 'bg-amber-400 text-slate-950 border-white shadow'
-                        : 'bg-[#0F192A] text-slate-200 border-white/15 hover:border-white/50'
-                    }`}
-                  >
-                    {sec} 秒
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 4 Question Mode Buttons */}
-          <div className="mt-3 pt-2.5 border-t border-white/10">
-            <div className="text-xs font-bold text-amber-300 mb-2 flex items-center justify-between">
-              <span>選擇題目範圍（點擊即換題庫）：</span>
-              <span className="text-[11px] text-slate-300 font-normal">共 10 題/關</span>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-              {(Object.keys(QUESTION_MODES) as QuestionModeId[]).map((modeId) => {
-                const cfg = QUESTION_MODES[modeId];
-                const isSelected = selectedMode === modeId;
-                const modeStat = progress[modeId];
-
-                return (
-                  <button
-                    key={modeId}
-                    type="button"
-                    onClick={() => startNewGame(modeId)}
-                    className={`group relative px-3 py-2 rounded-xl border-2 text-left transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'bg-[#1973F3] border-white shadow-[0_3px_0_#0D47A1]'
-                        : 'bg-[#0F192A] border-white/15 hover:border-white/50'
-                    }`}
-                  >
-                    <div className="min-w-0 pr-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-black text-sm text-white truncate">
-                          {cfg.title}
-                        </span>
-                        {isSelected && (
-                          <Check className="w-4 h-4 text-amber-300 shrink-0 stroke-[3]" />
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-200/80 truncate hidden sm:block">
-                        {cfg.subtitle}
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <div className="text-[11px] font-bold text-amber-300 tabular-nums">
-                        {cfg.rangeLabel}
-                      </div>
-                      <div className="text-[10px] text-slate-300 tabular-nums hidden sm:block">
-                        最高 {modeStat?.highScore ?? 0} 分
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Quick Demo Button to match exact screenshot Q 5/10 */}
-          <div className="mt-3 pt-2.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={loadScreenshotReplicaState}
-              className="flex-1 py-2 px-3 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/50 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              還原原圖示範 (Q 5/10)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => startNewGame(selectedMode)}
-              className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/20 text-white text-xs font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              重開本關
-            </button>
-          </div>
-        </div>
-
-        {/* Desktop Weapon Arsenal & Rules Card */}
-        <div className="hidden lg:block bg-[#152238] border-2 border-white/20 rounded-2xl p-4 shadow-xl">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-black text-amber-300 flex items-center gap-1.5">
-              <Trophy className="w-4 h-4" />
-              軍團武器進化階梯
-            </h2>
-            <span className="text-xs text-slate-300 tabular-nums">
-              已答啱 {correctCount} 題
-            </span>
-          </div>
-          <div className="space-y-1.5">
-            {WEAPON_TIERS.map((w) => {
-              const isCurrent = currentWeapon.tier === w.tier;
-              const isUnlocked = correctCount >= w.minCorrect;
-              return (
-                <div
-                  key={w.tier}
-                  className={`px-3 py-1.5 rounded-xl flex items-center justify-between text-xs border ${
-                    isCurrent
-                      ? 'bg-[#1E3458] border-amber-400 text-white font-bold'
-                      : isUnlocked
-                      ? 'bg-[#101C30] border-white/10 text-slate-300'
-                      : 'bg-[#0C1524] border-transparent text-slate-500'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: w.color }}
-                    />
-                    <span>{w.name}</span>
-                  </div>
-                  <span className="tabular-nums font-display text-[11px]">
-                    戰力 x{w.multiplier}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </aside>
-
+    <div className="game-shell min-h-svh w-full text-white flex flex-col items-center justify-center p-2 sm:p-4 gap-3">
+      <nav className="w-full max-w-[480px] flex justify-between items-center gap-3">
+        <button onClick={returnToSettings} className="rounded-xl px-4 py-2 bg-slate-800 border border-white/20 font-bold cursor-pointer">← 返回設定</button>
+        <span className="text-sm text-slate-300">{currentModeConfig.title} · {questionDuration} 秒／題</span>
+        <button onClick={handleToggleMute} aria-label="切換音效" className="p-2 rounded-xl bg-slate-800 cursor-pointer">{muted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
+      </nav>
       {/* CENTER: 1:1 ARCADE BRIDGE GAME VIEWPORT */}
-      <main className="relative w-full max-w-[412px] h-[690px] sm:h-[735px] rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.65)] border-[4px] border-[#1E293B] bg-[#38A7F8] flex flex-col shrink-0">
+      <main className="relative w-full max-w-[480px] h-[min(790px,calc(100svh-90px))] min-h-[590px] rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.65)] border-[4px] border-[#1E293B] bg-[#38A7F8] flex flex-col shrink-0">
         {gameState === 'PLAYING' && (
           <>
             {/* Background 2.5D Running Bridge & Approaching Gates Scene */}
             <BridgeScene
+              paused={isPaused || countdown !== null}
               question={currentQuestion}
               troops={troops}
               selectedLane={selectedLane}
@@ -871,28 +646,20 @@ export default function App() {
             records={records}
             victory={bossVictory}
             onPlayAgain={() => startNewGame(selectedMode)}
-            onSwitchMode={(mId) => startNewGame(mId)}
+            onSwitchMode={(mId) => { setSelectedMode(mId); returnToSettings(); }}
           />
         )}
 
         {/* PAUSE & MODE SWITCH MODAL */}
         {isPaused && (
-          <PauseModal
-            currentMode={selectedMode}
-            questionDuration={questionDuration}
-            muted={muted}
-            autoAdvanceOnSelect={autoAdvanceOnSelect}
-            onResume={() => setIsPaused(false)}
-            onRestart={() => startNewGame(selectedMode)}
-            onSelectMode={(mId) => startNewGame(mId)}
-            onChangeQuestionDuration={(sec) => {
-              setQuestionDuration(sec);
-              setGateProgress(0.05);
-            }}
-            onLoadScreenshotDemo={loadScreenshotReplicaState}
-            onToggleMute={handleToggleMute}
-            onToggleAutoAdvance={() => setAutoAdvanceOnSelect((prev) => !prev)}
-          />
+          <PauseModal onResume={() => setIsPaused(false)} onRestart={() => startNewGame(selectedMode)} onSettings={returnToSettings} />
+        )}
+        {countdown !== null && gameState === 'PLAYING' && !isPaused && (
+          <div className="absolute inset-0 z-40 bg-slate-950/65 flex flex-col items-center justify-center gap-5 backdrop-blur-sm" aria-live="polite">
+            <p className="text-xl font-black">準備出發！</p>
+            <span key={countdown} className="countdown-pop text-8xl font-black text-amber-300">{countdown}</span>
+            <p className="text-sm text-slate-200">選擇正確跑道，再按「前進」</p>
+          </div>
         )}
       </main>
     </div>

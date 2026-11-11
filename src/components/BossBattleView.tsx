@@ -32,37 +32,32 @@ export const BossBattleView: React.FC<BossBattleViewProps> = ({
     if (!isFiring || battleDone) return;
 
     const stepDamage = Math.max(25, Math.ceil(totalFirepower / 14));
+    let remainingHp = modeConfig.bossMaxHp;
+    let finished = false;
+    let finishTimer: ReturnType<typeof setTimeout>;
+    const settle = (victory: boolean, bonus: number) => {
+      if (finished) return;
+      finished = true;
+      clearInterval(interval);
+      setBattleDone(true);
+      if (victory) soundFX.playVictoryFanfare();
+      finishTimer = setTimeout(() => onFinishBattle(victory, bonus), 900);
+    };
     const interval = setInterval(() => {
       soundFX.playShotgunBurst();
-      setBossHp((prev) => {
-        const next = Math.max(0, prev - stepDamage);
-        if (next === 0) {
-          clearInterval(interval);
-          setBattleDone(true);
-          soundFX.playVictoryFanfare();
-          setTimeout(() => {
-            onFinishBattle(true, Math.round(totalFirepower * 0.5));
-          }, 900);
-        }
-        return next;
-      });
+      remainingHp = Math.max(0, remainingHp - stepDamage);
+      setBossHp(remainingHp);
+      if (remainingHp === 0) settle(true, Math.round(totalFirepower * .5));
     }, 130);
-
     const maxDurationTimer = setTimeout(() => {
-      clearInterval(interval);
-      if (!battleDone) {
-        setBattleDone(true);
-        const victory = totalFirepower >= modeConfig.bossMaxHp * 0.6;
-        if (victory) soundFX.playVictoryFanfare();
-        onFinishBattle(victory, Math.round(totalFirepower * 0.4));
-      }
+      settle(totalFirepower >= modeConfig.bossMaxHp * .6, Math.round(totalFirepower * .4));
     }, 2300);
-
     return () => {
       clearInterval(interval);
       clearTimeout(maxDurationTimer);
+      clearTimeout(finishTimer);
     };
-  }, [isFiring, battleDone, totalFirepower, modeConfig.bossMaxHp, onFinishBattle]);
+  }, [isFiring, totalFirepower, modeConfig.bossMaxHp, onFinishBattle]);
 
   const hpPercent = Math.max(0, Math.min(100, Math.round((bossHp / modeConfig.bossMaxHp) * 100)));
 
@@ -95,7 +90,7 @@ export const BossBattleView: React.FC<BossBattleViewProps> = ({
         {/* Giant Boss Figure */}
         <div
           className={`relative w-32 h-32 rounded-3xl bg-gradient-to-b from-rose-600 to-rose-900 border-4 border-amber-300 shadow-2xl flex flex-col items-center justify-center transition-transform ${
-            isFiring && bossHp > 0 ? 'scale-95 animate-pulse' : ''
+            isFiring && bossHp > 0 ? 'boss-hit' : ''
           } ${bossHp === 0 ? 'scale-75 opacity-30 rotate-12' : ''}`}
         >
           <div className="flex gap-4 mb-2">
@@ -118,8 +113,8 @@ export const BossBattleView: React.FC<BossBattleViewProps> = ({
             {[0, 1, 2, 3, 4].map((idx) => (
               <div
                 key={idx}
-                style={{ backgroundColor: weapon.projectileColor }}
-                className="w-2.5 h-8 rounded-full animate-ping shadow-lg"
+                style={{ backgroundColor: weapon.projectileColor, animationDelay: `${idx * -.08}s`, boxShadow: `0 0 16px ${weapon.projectileColor}` }}
+                className="w-2.5 h-8 rounded-full boss-projectile shadow-lg"
               />
             ))}
           </div>

@@ -114,3 +114,41 @@
 .animate-ocean-flow {
   animation: oceanWaveFlow 1.4s infinite linear;
 }
+
+.setup-shell, .game-shell {
+  background: radial-gradient(ellipse at 15% 5%, #164e63 0, transparent 48%), radial-gradient(ellipse at 90% 80%, #1e3a5f 0, transparent 45%), #0b1320;
+}
+.setup-card { background: #152238e8; border: 1px solid #ffffff24; border-radius: 24px; box-shadow: 0 16px 45px #0003; }
+.step-number { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; margin-right: 8px; background: #67e8f9; color: #0f172a; font-size: 14px; }
+.mode-card { transition: transform .18s ease, border-color .18s ease, background-color .18s ease; }
+.mode-card:hover { transform: translateY(-2px); }
+.start-button { box-shadow: 0 5px 0 #b77916, 0 10px 40px #fcd34d24; transition: transform .15s ease, box-shadow .15s ease; }
+.start-button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #b77916, 0 12px 45px #fcd34d40; }
+.start-button:active { transform: translateY(3px); box-shadow: 0 2px 0 #b77916; }
+button { touch-action: manipulation; }
+button:focus-visible { outline: 3px solid #67e8f9; outline-offset: 4px; }
+.page-enter { animation: pageEnter .4s ease-out both; }
+.countdown-pop { animation: countdownPop .85s ease-out both; }
+.feedback-pop { animation: feedbackPop .85s ease-out both; }
+.soldier-bob { animation: soldierBob .32s ease-in-out infinite alternate; }
+.bridge-scene[data-paused="true"] *, .bridge-scene[data-paused="true"] { animation-play-state: paused !important; }
+.speed-streak { position: absolute; top: 28%; height: 90px; width: 3px; border-radius: 99px; background: linear-gradient(transparent, #fff9); animation: speedStreak .4s linear infinite; }
+.impact-ring { position: absolute; top: 54%; left: 50%; width: 90px; height: 90px; border: 7px solid currentColor; border-radius: 50%; animation: impactRing .7s ease-out both; }
+.reward-spark { position: absolute; top: 55%; left: 50%; width: 9px; height: 15px; border-radius: 3px; animation: rewardSpark .85s ease-out both; }
+.impact-shake { animation: impactShake .28s ease-out; }
+.boss-projectile { animation: bossProjectile .45s linear infinite; }
+.boss-hit { animation: bossHit .26s ease-in-out infinite; }
+@keyframes pageEnter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes countdownPop { from { opacity: 0; transform: scale(1.6); } 30%, 75% { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.85); } }
+@keyframes feedbackPop { from { opacity: 0; scale: .5; } 20% { opacity: 1; scale: 1.12; } 35%, 80% { opacity: 1; scale: 1; } to { opacity: 0; } }
+@keyframes soldierBob { from { translate: 0 0; } to { translate: 0 -3px; } }
+@keyframes speedStreak { from { opacity: 0; transform: translateY(0) scaleY(.2); } 30% { opacity: .8; } to { opacity: 0; transform: translateY(400px) scaleY(1.5); } }
+@keyframes impactRing { from { opacity: .9; transform: translate(-50%,-50%) scale(.3); } to { opacity: 0; transform: translate(-50%,-50%) scale(4.5); } }
+@keyframes rewardSpark { from { opacity: 1; transform: translate(0,0) rotate(0); } to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(240deg); } }
+@keyframes impactShake { 25% { translate: -5px 0; } 50% { translate: 5px 0; } 75% { translate: -3px 0; } }
+@keyframes bossProjectile { from { opacity: 0; transform: translateY(70px) scaleY(.5); } 20% { opacity: 1; } to { opacity: 0; transform: translateY(-140px) scaleY(1.5); } }
+@keyframes bossHit { 50% { transform: translateX(3px) rotate(2deg); filter: brightness(1.4); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .speed-streak, .reward-spark { display: none; }
+}
