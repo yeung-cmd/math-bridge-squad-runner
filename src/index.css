@@ -130,6 +130,7 @@ button:focus-visible { outline: 3px solid #67e8f9; outline-offset: 4px; }
 .page-enter { animation: pageEnter .4s ease-out both; }
 .countdown-pop { animation: countdownPop .85s ease-out both; }
 .feedback-pop { animation: feedbackPop .85s ease-out both; }
+.mission-toast { animation: missionToastPop 2.8s ease both; }
 .soldier-bob { animation: soldierBob .32s ease-in-out infinite alternate; }
 .bridge-scene[data-paused="true"] *, .bridge-scene[data-paused="true"] { animation-play-state: paused !important; }
 .speed-streak { position: absolute; top: 28%; height: 90px; width: 3px; border-radius: 99px; background: linear-gradient(transparent, #fff9); animation: speedStreak .4s linear infinite; }
@@ -141,6 +142,7 @@ button:focus-visible { outline: 3px solid #67e8f9; outline-offset: 4px; }
 @keyframes pageEnter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes countdownPop { from { opacity: 0; transform: scale(1.6); } 30%, 75% { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.85); } }
 @keyframes feedbackPop { from { opacity: 0; scale: .5; } 20% { opacity: 1; scale: 1.12; } 35%, 80% { opacity: 1; scale: 1; } to { opacity: 0; } }
+@keyframes missionToastPop { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.85); } 12%, 82% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -8px) scale(.95); } }
 @keyframes soldierBob { from { translate: 0 0; } to { translate: 0 -3px; } }
 @keyframes speedStreak { from { opacity: 0; transform: translateY(0) scaleY(.2); } 30% { opacity: .8; } to { opacity: 0; transform: translateY(400px) scaleY(1.5); } }
 @keyframes impactRing { from { opacity: .9; transform: translate(-50%,-50%) scale(.3); } to { opacity: 0; transform: translate(-50%,-50%) scale(4.5); } }
@@ -152,4 +154,5 @@ button:focus-visible { outline: 3px solid #67e8f9; outline-offset: 4px; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .speed-streak, .reward-spark { display: none; }
   .countdown-pop, .feedback-pop, .page-enter { animation: none !important; opacity: 1; }
+  .mission-toast { animation: none !important; }
 }

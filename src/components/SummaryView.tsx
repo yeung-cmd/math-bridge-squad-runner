@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnswerRecord, QuestionModeConfig, QuestionModeId, WeaponInfo } from '../types/game';
 import { QUESTION_MODES } from '../utils/questionGenerator';
+import { MissionProgress } from '../utils/missions';
 import { Star, RotateCcw, CheckCircle2, XCircle, Trophy } from 'lucide-react';
 
 interface SummaryViewProps {
@@ -10,6 +11,7 @@ interface SummaryViewProps {
   weapon: WeaponInfo;
   records: AnswerRecord[];
   victory: boolean;
+  missionProgress: MissionProgress[];
   onPlayAgain: () => void;
   onSwitchMode: (modeId: QuestionModeId) => void;
 }
@@ -21,6 +23,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   weapon,
   records,
   victory,
+  missionProgress,
   onPlayAgain,
   onSwitchMode
 }) => {
@@ -73,6 +76,22 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
           </div>
         </div>
       </div>
+
+      <section aria-label="本關任務結果" className="my-2 rounded-xl border border-white/15 bg-[#0F1829] p-3">
+        <h3 className="mb-2 text-sm font-black text-amber-200">本關任務</h3>
+        <div className="grid grid-cols-3 gap-2">
+          {missionProgress.map((mission) => (
+            <div key={mission.id} className={`rounded-lg border p-2 text-center ${mission.complete ? 'border-emerald-400/50 bg-emerald-950/50' : 'border-white/10 bg-slate-900/70'}`}>
+              <div className={`text-xs font-black ${mission.complete ? 'text-emerald-300' : 'text-slate-200'}`}>
+                {mission.complete ? '✓ ' : ''}{mission.title}
+              </div>
+              <div className="mt-1 text-[10px] text-slate-400">
+                {mission.complete ? '已完成' : mission.id === 'boss' ? '未完成' : `${mission.value}/${mission.target}`}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Question Review List */}
       <div className="my-3 flex-1 min-h-0 bg-[#0F1829] border border-white/15 rounded-xl p-3 overflow-y-auto">
