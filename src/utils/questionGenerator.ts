@@ -14,7 +14,7 @@ export const WEAPON_TIERS: WeaponInfo[] = [
     tier: 2,
     name: '輕型步槍',
     multiplier: 1.5,
-    minCorrect: 2,
+    minCorrect: 4,
     color: '#4ADE80',
     projectileColor: '#86EFAC',
     description: '精準點射步槍，火力提升 1.5 倍'
@@ -23,7 +23,7 @@ export const WEAPON_TIERS: WeaponInfo[] = [
     tier: 3,
     name: '重裝散彈槍',
     multiplier: 2.5,
-    minCorrect: 4,
+    minCorrect: 8,
     color: '#FB923C',
     projectileColor: '#FDBA74',
     description: '扇形高爆散彈，火力提升 2.5 倍'
@@ -32,7 +32,7 @@ export const WEAPON_TIERS: WeaponInfo[] = [
     tier: 4,
     name: '雙管機關槍',
     multiplier: 4.0,
-    minCorrect: 7,
+    minCorrect: 13,
     color: '#F43F5E',
     projectileColor: '#FDA4AF',
     description: '高速連射壓制，火力提升 4.0 倍'
@@ -41,7 +41,7 @@ export const WEAPON_TIERS: WeaponInfo[] = [
     tier: 5,
     name: '雷霆激光砲',
     multiplier: 6.0,
-    minCorrect: 9,
+    minCorrect: 18,
     color: '#A855F7',
     projectileColor: '#E9D5FF',
     description: '終極貫穿激光，火力提升 6.0 倍'
@@ -104,6 +104,20 @@ export const QUESTION_MODES: Record<QuestionModeId, QuestionModeConfig> = {
     timeLimitSeconds: 60,
     bossName: '迷宮岩石領主',
     bossMaxHp: 550
+  },
+  MULTIPLY_DIGITS: {
+    id: 'MULTIPLY_DIGITS',
+    title: '個位乘個位（2–9）',
+    shortTitle: '個位乘法',
+    subtitle: '熟習 2 至 9 的乘法表',
+    rangeLabel: '2–9 × 2–9',
+    badgeColor: '#8B5CF6',
+    initialTroops: 16,
+    baseRewardTroops: 4,
+    penaltyTroops: 3,
+    timeLimitSeconds: 60,
+    bossName: '乘法魔王',
+    bossMaxHp: 900
   }
 };
 
@@ -128,7 +142,9 @@ function generateSmartDistractor(correct: number, minVal: number, maxVal: number
   return pool[randomInt(0, pool.length - 1)];
 }
 
-export function generateQuestionSet(modeId: QuestionModeId, totalQuestions = 10): QuestionItem[] {
+export const QUESTIONS_PER_LEVEL = 20;
+
+export function generateQuestionSet(modeId: QuestionModeId, totalQuestions = QUESTIONS_PER_LEVEL): QuestionItem[] {
   const config = QUESTION_MODES[modeId];
   const questions: QuestionItem[] = [];
   const usedPrompts = new Set<string>();
@@ -137,13 +153,14 @@ export function generateQuestionSet(modeId: QuestionModeId, totalQuestions = 10)
     let prompt = '';
     let numA: number | undefined = undefined;
     let numB: number | undefined = undefined;
-    let operator: '+' | undefined = undefined;
+    let operator: '+' | '×' | undefined = undefined;
     let correctAnswer = 0;
     let wrongAnswer = 0;
 
     if (modeId === 'ADD_20') {
       for (let attempt = 0; attempt < 20; attempt++) {
-        const minSum = i <= 4 ? 5 : 11;
+        const progress = i / totalQuestions;
+        const minSum = progress <= 0.2 ? 5 : progress <= 0.45 ? 8 : progress <= 0.7 ? 11 : 14;
         const maxSum = 20;
         const sum = randomInt(minSum, maxSum);
         const a = randomInt(2, sum - 2);
@@ -162,7 +179,7 @@ export function generateQuestionSet(modeId: QuestionModeId, totalQuestions = 10)
       }
     } else if (modeId === 'ADD_50') {
       for (let attempt = 0; attempt < 20; attempt++) {
-        const minSum = i <= 3 ? 21 : 28;
+        const minSum = i / totalQuestions <= 0.2 ? 21 : 28;
         const maxSum = 50;
         const sum = randomInt(minSum, maxSum);
         const a = randomInt(6, sum - 6);
@@ -181,7 +198,7 @@ export function generateQuestionSet(modeId: QuestionModeId, totalQuestions = 10)
       }
     } else if (modeId === 'ADD_100') {
       for (let attempt = 0; attempt < 20; attempt++) {
-        const minSum = i <= 3 ? 51 : 65;
+        const minSum = i / totalQuestions <= 0.2 ? 51 : 65;
         const maxSum = 100;
         const sum = randomInt(minSum, maxSum);
         const a = randomInt(14, sum - 14);
@@ -198,7 +215,7 @@ export function generateQuestionSet(modeId: QuestionModeId, totalQuestions = 10)
           break;
         }
       }
-    } else {
+    } else if (modeId === 'NUMBER_SENSE') {
       if (i === 5) {
         prompt = '8 的前一個數是？';
         correctAnswer = 7;
@@ -232,6 +249,22 @@ export function generateQuestionSet(modeId: QuestionModeId, totalQuestions = 10)
             usedPrompts.add(prompt);
             break;
           }
+        }
+      }
+    } else {
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const a = randomInt(2, 9);
+        const b = randomInt(2, 9);
+        const candidatePrompt = `${a} × ${b} = ?`;
+        if (!usedPrompts.has(candidatePrompt) || attempt === 19) {
+          usedPrompts.add(candidatePrompt);
+          prompt = candidatePrompt;
+          numA = a;
+          numB = b;
+          operator = '×';
+          correctAnswer = a * b;
+          wrongAnswer = generateSmartDistractor(correctAnswer, 2, 81);
+          break;
         }
       }
     }

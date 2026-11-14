@@ -1,4 +1,4 @@
-export type QuestionModeId = 'ADD_20' | 'ADD_50' | 'ADD_100' | 'NUMBER_SENSE';
+export type QuestionModeId = 'ADD_20' | 'ADD_50' | 'ADD_100' | 'NUMBER_SENSE' | 'MULTIPLY_DIGITS';
 
 export type GameState = 'PLAYING' | 'BOSS_FIGHT' | 'SUMMARY';
 
@@ -31,11 +31,11 @@ export interface QuestionModeConfig {
 
 export interface QuestionItem {
   id: number;
-  index: number; // 1..10
+  index: number; // 1..20
   prompt: string;
   numA?: number;
   numB?: number;
-  operator?: '+';
+  operator?: '+' | '×';
   leftOption: number;
   rightOption: number;
   correctLane: Lane;

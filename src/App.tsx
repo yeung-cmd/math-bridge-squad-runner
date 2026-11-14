@@ -17,7 +17,8 @@ import {
 import {
   generateQuestionSet,
   getWeaponForCorrectCount,
-  QUESTION_MODES
+  QUESTION_MODES,
+  QUESTIONS_PER_LEVEL
 } from './utils/questionGenerator';
 import { soundFX } from './utils/sound';
 import { BridgeScene } from './components/BridgeScene';
@@ -33,10 +34,11 @@ import {
 const STORAGE_KEY = 'math_bridge_squad_progress_v1';
 
 const DEFAULT_PROGRESS: ProgressMap = {
-  ADD_20: { highScore: 520, bestTroops: 26, stars: 3, gamesPlayed: 1 },
-  ADD_50: { highScore: 580, bestTroops: 28, stars: 3, gamesPlayed: 1 },
-  ADD_100: { highScore: 640, bestTroops: 30, stars: 3, gamesPlayed: 1 },
-  NUMBER_SENSE: { highScore: 508, bestTroops: 22, stars: 3, gamesPlayed: 1 }
+  ADD_20: { highScore: 0, bestTroops: 0, stars: 0, gamesPlayed: 0 },
+  ADD_50: { highScore: 0, bestTroops: 0, stars: 0, gamesPlayed: 0 },
+  ADD_100: { highScore: 0, bestTroops: 0, stars: 0, gamesPlayed: 0 },
+  NUMBER_SENSE: { highScore: 0, bestTroops: 0, stars: 0, gamesPlayed: 0 },
+  MULTIPLY_DIGITS: { highScore: 0, bestTroops: 0, stars: 0, gamesPlayed: 0 }
 };
 
 export default function App() {
@@ -51,9 +53,9 @@ export default function App() {
   // Per-question running & choosing duration (configurable: 5s, 8s, 10s, 15s)
   const [questionDuration, setQuestionDuration] = useState<number>(8);
 
-  // Questions & current index (0..9)
+  // Questions & current index (0..19)
   const [questions, setQuestions] = useState<QuestionItem[]>(() =>
-    generateQuestionSet('ADD_20', 10)
+    generateQuestionSet('ADD_20', QUESTIONS_PER_LEVEL)
   );
   const [currentIdx, setCurrentIdx] = useState<number>(0);
 
@@ -133,7 +135,7 @@ export default function App() {
     }
     hasTriggeredImpactRef.current = false;
     const cfg = QUESTION_MODES[modeId];
-    const newQuestions = generateQuestionSet(modeId, 10);
+    const newQuestions = generateQuestionSet(modeId, QUESTIONS_PER_LEVEL);
     setSelectedMode(modeId);
     setQuestions(newQuestions);
     setCurrentIdx(0);
@@ -151,7 +153,12 @@ export default function App() {
     setIsPaused(false);
     setScreen('GAME');
     setCountdown(3);
+    soundFX.startBackgroundMusic();
   }, [gateProgress, questionDuration]);
+
+  useEffect(() => {
+    soundFX.pauseBackgroundMusic(screen !== 'GAME' || isPaused || gameState === 'SUMMARY');
+  }, [screen, isPaused, gameState]);
 
   // Resolve impact when gateProgress reaches 1.0 (soldiers smash through the gate!)
   const resolveGateImpact = useCallback(() => {
@@ -313,8 +320,9 @@ export default function App() {
   }, [screen, countdown, gameState, isPaused, impactResult, handleSelectLane, handleAdvance]);
 
   const handleToggleMute = () => {
-    soundFX.muted = !muted;
-    setMuted(!muted);
+    const nextMuted = !muted;
+    soundFX.setMuted(nextMuted);
+    setMuted(nextMuted);
   };
 
   const handleBossBattleComplete = useCallback(
@@ -324,11 +332,11 @@ export default function App() {
       setBossVictory(victory);
       const totalCorrect = records.filter((r) => r.isCorrect).length;
       const earnedStars =
-        totalCorrect >= 9 && victory
+        totalCorrect >= 18 && victory
           ? 3
-          : totalCorrect >= 6
+          : totalCorrect >= 12
           ? 2
-          : totalCorrect >= 3
+          : totalCorrect >= 6
           ? 1
           : 0;
       updateModeProgress(selectedMode, finalScore, troops, earnedStars);
@@ -343,6 +351,7 @@ export default function App() {
   );
 
   const returnToSettings = () => {
+    soundFX.stopBackgroundMusic();
     setScreen('SETUP');
     setIsPaused(false);
     setCountdown(null);
@@ -448,7 +457,7 @@ export default function App() {
 
               {/* Row 2: UPGRADED HIGH-CLARITY QUESTION BANNER AT THE TOP */}
               <div className="w-full bg-[#131F33] border-[3.5px] border-white rounded-[22px] px-3.5 pt-2 pb-3 shadow-2xl">
-                {/* Top Metadata Row: Q 5/10, Mode Title, & Remaining Seconds */}
+                {/* Top Metadata Row: question number, mode title, and remaining seconds */}
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5">
                     <span className="font-display font-black text-[#93B4E8] text-sm tracking-wide tabular-nums">
@@ -474,7 +483,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Clear Visual Equation Display: Shows "乜嘢加邊個" in Huge Number Blocks! */}
+                {/* Large number blocks keep arithmetic questions easy to scan. */}
                 {currentQuestion.numA !== undefined &&
                 currentQuestion.numB !== undefined ? (
                   <div className="flex flex-col items-center">
@@ -486,9 +495,9 @@ export default function App() {
                         </span>
                       </div>
 
-                      {/* Plus Sign */}
+                      {/* Operation Sign */}
                       <span className="font-display font-black text-amber-400 text-3xl sm:text-4xl drop-shadow">
-                        +
+                        {currentQuestion.operator ?? '+'}
                       </span>
 
                       {/* Second Addend Box */}

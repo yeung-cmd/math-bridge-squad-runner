@@ -2,6 +2,10 @@
 
 class SoundManager {
   private ctx: AudioContext | null = null;
+  private musicTimer: number | null = null;
+  private musicStep = 0;
+  private musicRequested = false;
+  private musicPaused = false;
   public muted: boolean = false;
 
   private getContext(): AudioContext | null {
@@ -16,6 +20,75 @@ class SoundManager {
       this.ctx.resume().catch(() => {});
     }
     return this.ctx;
+  }
+
+  public setMuted(muted: boolean) {
+    this.muted = muted;
+    if (!muted) this.ctx?.resume().catch(() => {});
+    this.syncBackgroundMusic();
+  }
+
+  public startBackgroundMusic() {
+    this.musicRequested = true;
+    this.musicStep = 0;
+    this.syncBackgroundMusic();
+  }
+
+  public pauseBackgroundMusic(paused: boolean) {
+    this.musicPaused = paused;
+    this.syncBackgroundMusic();
+  }
+
+  public stopBackgroundMusic() {
+    this.musicRequested = false;
+    this.syncBackgroundMusic();
+  }
+
+  private syncBackgroundMusic() {
+    const shouldPlay = this.musicRequested && !this.musicPaused && !this.muted;
+    if (!shouldPlay) {
+      if (this.musicTimer !== null) {
+        window.clearInterval(this.musicTimer);
+        this.musicTimer = null;
+      }
+      return;
+    }
+    if (this.musicTimer !== null || !this.getContext()) return;
+
+    const melody = [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880, 698.46,
+      523.25, 659.25, 783.99, 1046.5, 880, 783.99, 659.25, 587.33];
+    this.musicTimer = window.setInterval(() => {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const note = melody[this.musicStep % melody.length];
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(note, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.035, now + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.19);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
+
+      if (this.musicStep % 4 === 0) {
+        const bass = ctx.createOscillator();
+        const bassGain = ctx.createGain();
+        bass.type = 'triangle';
+        bass.frequency.setValueAtTime(note / 2, now);
+        bassGain.gain.setValueAtTime(0.0001, now);
+        bassGain.gain.linearRampToValueAtTime(0.025, now + 0.02);
+        bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+        bass.connect(bassGain);
+        bassGain.connect(ctx.destination);
+        bass.start(now);
+        bass.stop(now + 0.29);
+      }
+      this.musicStep += 1;
+    }, 210);
   }
 
   public playLaneSelect() {
