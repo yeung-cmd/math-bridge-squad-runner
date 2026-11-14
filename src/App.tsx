@@ -25,6 +25,7 @@ import { BridgeScene } from './components/BridgeScene';
 import { BossBattleView } from './components/BossBattleView';
 import { SummaryView } from './components/SummaryView';
 import { PauseModal } from './components/PauseModal';
+import { getMissionProgress, MissionId } from './utils/missions';
 import {
   Volume2,
   VolumeX,
@@ -78,6 +79,8 @@ export default function App() {
   } | null>(null);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [bossVictory, setBossVictory] = useState<boolean>(true);
+  const [completedMissionIds, setCompletedMissionIds] = useState<MissionId[]>([]);
+  const [missionToast, setMissionToast] = useState<string | null>(null);
 
   const [progress, setProgress] = useState<ProgressMap>(() => {
     try {
@@ -97,6 +100,7 @@ export default function App() {
   const currentModeConfig = QUESTION_MODES[selectedMode];
   const currentQuestion = questions[currentIdx] || questions[0];
   const currentWeapon = getWeaponForCorrectCount(correctCount);
+  const missionProgress = getMissionProgress(records);
 
   // Save progress helper
   const updateModeProgress = useCallback(
@@ -149,6 +153,9 @@ export default function App() {
     setImpactResult(null);
     setFloatingFeedback(null);
     setRecords([]);
+    setCompletedMissionIds([]);
+    setMissionToast(null);
+    setBossVictory(false);
     setGameState('PLAYING');
     setIsPaused(false);
     setScreen('GAME');
@@ -159,6 +166,25 @@ export default function App() {
   useEffect(() => {
     soundFX.pauseBackgroundMusic(screen !== 'GAME' || isPaused || gameState === 'SUMMARY');
   }, [screen, isPaused, gameState]);
+
+  useEffect(() => {
+    const newlyCompleted = getMissionProgress(records).filter(
+      (mission) => mission.complete && !completedMissionIds.includes(mission.id)
+    );
+    if (newlyCompleted.length === 0) return;
+
+    setCompletedMissionIds((previous) => [
+      ...previous,
+      ...newlyCompleted.map((mission) => mission.id).filter((id) => !previous.includes(id))
+    ]);
+    setMissionToast(`任務完成：${newlyCompleted.map((mission) => mission.title).join('、')}！`);
+  }, [records, completedMissionIds]);
+
+  useEffect(() => {
+    if (!missionToast) return;
+    const timeout = window.setTimeout(() => setMissionToast(null), 2800);
+    return () => window.clearTimeout(timeout);
+  }, [missionToast]);
 
   // Resolve impact when gateProgress reaches 1.0 (soldiers smash through the gate!)
   const resolveGateImpact = useCallback(() => {
@@ -330,6 +356,10 @@ export default function App() {
       const finalScore = score + bossBonusScore + 150;
       setScore(finalScore);
       setBossVictory(victory);
+      if (victory && !completedMissionIds.includes('boss')) {
+        setCompletedMissionIds((previous) => previous.includes('boss') ? previous : [...previous, 'boss']);
+        setMissionToast('任務完成：首領剋星！');
+      }
       const totalCorrect = records.filter((r) => r.isCorrect).length;
       const earnedStars =
         totalCorrect >= 18 && victory
@@ -342,7 +372,7 @@ export default function App() {
       updateModeProgress(selectedMode, finalScore, troops, earnedStars);
       setGameState('SUMMARY');
     },
-    [score, records, updateModeProgress, selectedMode, troops]
+    [score, records, updateModeProgress, selectedMode, troops, completedMissionIds]
   );
 
   const timeProgressPercent = Math.max(
@@ -541,6 +571,21 @@ export default function App() {
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-3 gap-1.5" aria-label="本關任務進度">
+                {missionProgress.map((mission) => (
+                  <div
+                    key={mission.id}
+                    title={`${mission.description} · ${mission.complete ? '已完成' : `${mission.value}/${mission.target}`}`}
+                    className={`min-w-0 rounded-lg border px-1.5 py-1 text-center ${mission.complete ? 'border-emerald-300/70 bg-emerald-950/85 text-emerald-200' : 'border-white/20 bg-slate-950/75 text-slate-200'}`}
+                  >
+                    <div className="truncate text-[10px] font-black">{mission.complete ? '✓ ' : ''}{mission.title}</div>
+                    <div className="text-[9px] tabular-nums opacity-80">
+                      {mission.id === 'boss' && !mission.complete ? '待完成' : `${mission.value}/${mission.target}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* BOTTOM OVERLAY: LANE SELECTION BUTTONS & YELLOW "前進" BUTTON */}
@@ -635,6 +680,13 @@ export default function App() {
           </>
         )}
 
+        {missionToast && (
+          <div role="status" aria-live="polite" className="mission-toast absolute left-1/2 top-[43%] z-50 w-[88%] -translate-x-1/2 rounded-2xl border-2 border-amber-200 bg-slate-950/95 px-4 py-3 text-center shadow-2xl">
+            <div className="text-xs font-bold tracking-widest text-amber-200">任務完成</div>
+            <div className="mt-1 text-lg font-black text-white">{missionToast.replace('任務完成：', '').replace(/！$/, '')}</div>
+          </div>
+        )}
+
         {/* END OF STAGE BOSS BATTLE VIEW */}
         {gameState === 'BOSS_FIGHT' && (
           <BossBattleView
@@ -654,6 +706,7 @@ export default function App() {
             weapon={currentWeapon}
             records={records}
             victory={bossVictory}
+            missionProgress={getMissionProgress(records, bossVictory)}
             onPlayAgain={() => startNewGame(selectedMode)}
             onSwitchMode={(mId) => { setSelectedMode(mId); returnToSettings(); }}
           />
