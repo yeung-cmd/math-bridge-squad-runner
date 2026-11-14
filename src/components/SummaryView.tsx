@@ -26,7 +26,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
 }) => {
   const correctCount = records.filter((r) => r.isCorrect).length;
   const stars =
-    correctCount >= 9 && victory ? 3 : correctCount >= 6 ? 2 : correctCount >= 3 ? 1 : 0;
+    correctCount >= 18 && victory ? 3 : correctCount >= 12 ? 2 : correctCount >= 6 ? 1 : 0;
 
   return (
     <div className="relative w-full h-full bg-[#152238] text-white flex flex-col justify-between p-4 overflow-y-auto">

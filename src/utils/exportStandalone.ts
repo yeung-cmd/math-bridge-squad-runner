@@ -16,7 +16,7 @@ export function triggerBlobDownload(content: string | Blob, filename: string, mi
 }
 
 export function downloadAllQuestionBanksCSV() {
-  const modes: QuestionModeId[] = ['ADD_20', 'ADD_50', 'ADD_100', 'NUMBER_SENSE'];
+  const modes: QuestionModeId[] = ['ADD_20', 'ADD_50', 'ADD_100', 'NUMBER_SENSE', 'MULTIPLY_DIGITS'];
   const rows: string[] = ['題庫模式,題號,題目,正確答案,干擾選項,左跑道選項,右跑道選項'];
 
   modes.forEach((mId) => {
