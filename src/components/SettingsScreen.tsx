@@ -28,7 +28,7 @@ export function SettingsScreen(props: Props) {
       <header className="text-center mb-8">
         <div className="inline-flex items-center gap-2 text-cyan-200 text-sm tracking-widest font-bold mb-4"><Sparkles size={18} /> 數學冒險，準備出發</div>
         <h1 className="text-3xl sm:text-5xl font-black leading-tight">{isRescue ? '數學星光救援隊' : '數學橋樑軍團大作戰'}</h1>
-        <p className="text-slate-300 mt-4">{isRescue ? '選好題目和速度，帶領機械人收集星光能量。' : '選好題目和速度，帶領軍團衝過數學橋樑！'}</p>
+        <p className="text-slate-300 mt-4">{isRescue ? '計算答案，發射能量波守住燈塔。' : '選好題目和速度，帶領軍團衝過數學橋樑！'}</p>
       </header>
       <div className="grid md:grid-cols-[1.4fr_1fr] gap-5">
         <section className="setup-card p-5 sm:p-6" aria-labelledby="mode-title">
@@ -59,8 +59,8 @@ export function SettingsScreen(props: Props) {
           </section>
           <section className="setup-card p-5 text-sm text-slate-300">
             <h2 className="font-black text-white mb-3">怎樣遊玩？</h2>
-            <p className="leading-7">閱讀題目 <ArrowRight className="inline mx-1" size={14} /> 選擇左右跑道<br />{isRescue ? '按「前進」確認答案。答對可收集能量和招募機械人。' : '按「前進」衝線，答對可增加士兵和升級武器。'}</p>
-            <p className="text-xs text-slate-400 mt-3">鍵盤：← → 選擇跑道，空白鍵前進。</p>
+            <p className="leading-7">閱讀題目 <ArrowRight className="inline mx-1" size={14} /> 選擇左右跑道<br />{isRescue ? '選道後按「確認並發射」。答對會發出能量波，答錯或超時會有敵方增援。' : '按「前進」衝線，答對可增加士兵和升級武器。'}</p>
+            <p className="text-xs text-slate-400 mt-3">{isRescue ? '鍵盤：← → 選擇跑道，空白鍵發射。' : '鍵盤：← → 選擇跑道，空白鍵前進。'}</p>
           </section>
         </div>
       </div>

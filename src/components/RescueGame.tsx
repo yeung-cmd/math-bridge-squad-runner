@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, BatteryCharging, Bot, CheckCircle2, CircleX, FastForward, Pause, RadioTower, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, BatteryCharging, Bot, CheckCircle2, CircleX, Pause, RadioTower, Shield, Zap, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { SettingsScreen } from './SettingsScreen';
 import { PauseModal } from './PauseModal';
 import { QuestionItem, QuestionModeId } from '../types/game';
 import { generateQuestionSet, QUESTION_MODES } from '../utils/questionGenerator';
 import { soundFX } from '../utils/sound';
 import { createRescuePainter, REWARD_TILES, SCENE_HEIGHT, SCENE_WIDTH, STARTING_ROBOTS } from '../utils/rescueScene';
+import { addReinforcements, addWave, createDefense, Defense, launchPulse, MAX_SHIELD, updateDefense } from '../utils/rescueDefense';
 import './rescue.css';
 
 const QUESTION_COUNT = 10;
@@ -39,10 +40,12 @@ interface RunState {
   correct: number;
   collected: number;
   records: Answer[];
+  defense: Defense;
+  reinforcements: number;
 }
 
 function makeRun(): RunState {
-  return { phase: 'ready', phaseMs: 0, elapsed: 0, distance: 0, index: 0, lane: 0, selected: 0, approach: 0, rushFrom: 0, energy: 0, correct: 0, collected: 0, records: [] };
+  return { phase: 'ready', phaseMs: 0, elapsed: 0, distance: 0, index: 0, lane: 0, selected: 0, approach: 0, rushFrom: 0, energy: 0, correct: 0, collected: 0, records: [], defense: createDefense(), reinforcements: 0 };
 }
 
 export default function RescueGame({ onChooseGame }: { onChooseGame: () => void }) {
@@ -92,12 +95,17 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
   const canvas = useRef<HTMLCanvasElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const painter = useRef<ReturnType<typeof createRescuePainter> | null>(null);
-  const run = useRef(makeRun());
+  const [initialRun] = useState(makeRun);
+  const run = useRef(initialRun);
   const pausedRef = useRef(false);
   const swipe = useRef<{ pointer: number; start: number } | null>(null);
   const [paused, setPaused] = useState(false);
-  const [view, setView] = useState(() => ({ ...run.current }));
-  const updateView = () => setView({ ...run.current });
+  const readView = () => {
+    const { defense, ...state } = run.current;
+    return { ...state, shield: defense.shield, incoming: defense.drones.length, disabled: defense.disabled };
+  };
+  const [view, setView] = useState(readView);
+  const updateView = () => setView(readView());
   const limit = seconds * 1000;
   const question = questions[view.index];
   const latest = view.phase === 'reward' ? view.records.at(-1) : undefined;
@@ -197,7 +205,14 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
       const result = chosen === null ? 'timeout' : chosen === item.correctAnswer ? 'correct' : 'wrong';
       state.records = [...state.records, { question: item, chosen, result }];
       state.collected = 0;
-      if (result === 'wrong') soundFX.playWrongGate();
+      if (result === 'correct') {
+        state.correct += 1;
+        launchPulse(state.defense, state.selected);
+        soundFX.playCorrectGate();
+      } else {
+        state.reinforcements = addReinforcements(state.defense);
+        soundFX.playWrongGate();
+      }
       enter('reward');
     };
 
@@ -207,13 +222,17 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
       lastTime = time;
       const previousPhase = state.phase;
       const previousEnergy = state.energy;
-      const previousPhaseMs = state.phaseMs;
       // Simulation time and movement are independent of the display refresh rate.
       state.phaseMs += dt;
       const visualDt = Math.min(dt, 50);
       state.elapsed += visualDt / 1000;
       state.distance += visualDt * (state.phase === 'rush' || state.phase === 'reward' ? .0055 : .0018);
       state.lane = reducedMotion.matches ? state.selected : state.lane + (state.selected - state.lane) * (1 - Math.exp(-visualDt / 48));
+
+      if (state.phase === 'question' || state.phase === 'rush' || state.phase === 'reward') {
+        updateDefense(state.defense, visualDt);
+        if (state.defense.shield === 0) enter('summary');
+      }
 
       const record = state.records.at(-1);
       if (state.phase === 'ready' && state.phaseMs >= READY_MS) {
@@ -232,11 +251,6 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
             state.collected = collected;
             soundFX.playLaneSelect();
           }
-          if (previousPhaseMs < 570 && state.phaseMs >= 570) {
-            state.correct += 1;
-            soundFX.playCorrectGate();
-            updateView();
-          }
         }
 
         if (state.phaseMs >= (record.result === 'correct' ? CORRECT_MS : REVIEW_MS)) {
@@ -247,6 +261,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
             state.index += 1;
             state.approach = 0;
             state.selected = 0;
+            if (state.defense.drones.length < 10) addWave(state.defense, 13 + state.index);
             enter('question');
           }
         }
@@ -258,11 +273,13 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
       painter.current?.({
         elapsed: state.elapsed, distance: state.distance, lane: state.lane, selected: state.selected,
         approach: state.approach, rush: state.phase === 'rush',
-        team: STARTING_ROBOTS + state.correct, options: [item.leftOption, item.rightOption],
+        team: STARTING_ROBOTS + state.correct - Number(state.phase === 'reward' && state.records.at(-1)?.result === 'correct' && state.phaseMs < 570),
+        options: [item.leftOption, item.rightOption],
         result: state.phase === 'reward' ? state.records.at(-1)?.result ?? null : null,
         rewardElapsed: state.phaseMs,
         charge: state.phase === 'tower' ? state.phaseMs / TOWER_MS : null,
-        layers: Math.ceil(state.correct / 2)
+        layers: Math.ceil(state.correct / 2),
+        defense: state.defense
       }, reducedMotion.matches);
 
       if (previousPhase !== state.phase || previousEnergy !== state.energy || time - lastUpdate >= 100) {
@@ -293,10 +310,12 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
         <main className="rescue-board">
           <div className="rescue-hud">
             <span><BatteryCharging size={20} aria-hidden="true" /> 能量 <strong>{view.energy}</strong></span>
-            <span><Bot size={20} aria-hidden="true" /> 隊員 <strong>{STARTING_ROBOTS + view.correct}</strong></span>
+            <span><Bot size={20} aria-hidden="true" /> 敵群 <strong>{view.incoming}</strong></span>
+            <span className={view.shield <= 32 ? 'rescue-danger' : ''}><Shield size={18} aria-hidden="true" /> 護盾 <strong>{view.shield}%</strong></span>
             <button type="button" onClick={() => pause(true)} aria-label="暫停遊戲" className="rescue-icon"><Pause size={19} /></button>
           </div>
 
+          <progress className="rescue-shield" aria-label="基地護盾" value={view.shield} max={MAX_SHIELD} />
           {inQuestion ? (
             <section className="rescue-question" aria-label="數學題目">
               <div className="rescue-question-meta">
@@ -332,15 +351,15 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
             <canvas ref={canvas} aria-hidden="true" />
             {view.phase === 'ready' && (
               <div className="rescue-ready" role="status">
-                <span>準備出發</span><strong>{Math.max(1, Math.ceil((READY_MS - view.phaseMs) / 1000))}</strong>
+                <span>守住燈塔</span><strong>{Math.max(1, Math.ceil((READY_MS - view.phaseMs) / 1000))}</strong>
               </div>
             )}
             {latest && (
               <div className={`rescue-feedback ${latest.result === 'correct' ? 'rescue-feedback-good' : 'rescue-feedback-review'}`} role="status">
                 {latest.result === 'correct' ? (
-                  <><CheckCircle2 size={22} /> <span>答對了！{view.collected > 0 && `＋${view.collected} 能量`}{view.phaseMs >= 570 && ' · ＋1 隊員'}</span></>
+                  <><CheckCircle2 size={22} /> <span>能量波發射！{view.collected > 0 && ` ＋${view.collected} 能量`}</span></>
                 ) : (
-                  <><CircleX size={22} /> <span>{latest.result === 'timeout' ? '時間到' : '再接再厲'} · 正確答案是 {latest.question.correctAnswer}</span></>
+                  <><CircleX size={22} /> <span>{latest.result === 'timeout' ? '時間到' : '再接再厲'} · 正確答案 {latest.question.correctAnswer}<br />{view.reinforcements ? `敵方增援 ＋${view.reinforcements}` : '敵群仍在逼近'}</span></>
                 )}
               </div>
             )}
@@ -352,7 +371,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
                 <button type="button" data-rescue-lane aria-label={`左邊跑道 ${question.leftOption}`} aria-pressed={view.selected === -1} disabled={!canAnswer} onClick={() => select(-1)}><small>←</small> {question.leftOption}</button>
                 <button type="button" data-rescue-lane aria-label={`右邊跑道 ${question.rightOption}`} aria-pressed={view.selected === 1} disabled={!canAnswer} onClick={() => select(1)}>{question.rightOption} <small>→</small></button>
               </div>
-              <button type="button" className="rescue-advance" onClick={advance} disabled={!canAnswer || view.selected === 0}>前進 <FastForward size={18} aria-hidden="true" /></button>
+              <button type="button" className="rescue-advance" onClick={advance} disabled={!canAnswer || view.selected === 0}>確認並發射 <Zap size={18} aria-hidden="true" /></button>
             </div>
           )}
 
@@ -363,20 +382,20 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
   );
 }
 
-function RescueSummary({ view, onSettings, onRestart }: { view: RunState; onSettings: () => void; onRestart: () => void }) {
+function RescueSummary({ view, onSettings, onRestart }: { view: Omit<RunState, 'defense'> & { shield: number; disabled: number }; onSettings: () => void; onRestart: () => void }) {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => title.current?.focus(), []);
   return (
     <main className="rescue-summary page-enter">
       <header>
         <RadioTower className="mx-auto text-teal-200" size={36} aria-hidden="true" />
-        <h2 ref={title} tabIndex={-1} className="font-black text-2xl mt-2 outline-none">任務完成</h2>
-        <p className="mt-2 text-sm text-slate-200">點亮 {Math.ceil(view.correct / 2)}／5 層燈塔</p>
+        <h2 ref={title} tabIndex={-1} className="font-black text-2xl mt-2 outline-none">{view.shield > 0 ? '成功守住燈塔' : '防線被突破'}</h2>
+        <p className="mt-2 text-sm text-slate-200">{view.shield > 0 ? `點亮 ${Math.ceil(view.correct / 2)}／5 層燈塔 · 護盾 ${view.shield}%` : '護盾耗盡。重看答案，再挑戰一次。'}</p>
       </header>
       <dl className="grid grid-cols-3 gap-2 text-center">
         <div><dt>答對</dt><dd>{view.correct}／{view.records.length}</dd></div>
         <div><dt>能量</dt><dd>{view.energy}</dd></div>
-        <div><dt>隊員</dt><dd>{STARTING_ROBOTS + view.correct}</dd></div>
+        <div><dt>停機敵方</dt><dd>{view.disabled}</dd></div>
       </dl>
 
       <section aria-labelledby="rescue-review">
