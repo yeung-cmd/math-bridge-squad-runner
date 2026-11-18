@@ -5,20 +5,19 @@ import { PauseModal } from './PauseModal';
 import { QuestionItem, QuestionModeId } from '../types/game';
 import { generateQuestionSet, QUESTION_MODES } from '../utils/questionGenerator';
 import { soundFX } from '../utils/sound';
-import { createRescuePainter, REWARD_TILES, SCENE_HEIGHT, SCENE_WIDTH, STARTING_ROBOTS } from '../utils/rescueScene';
-import { addReinforcements, addWave, createDefense, Defense, launchPulse, MAX_SHIELD, updateDefense } from '../utils/rescueDefense';
+import { createRescuePainter, prepareArena, REWARD_TILES, SCENE_HEIGHT, SCENE_WIDTH, STARTING_ROBOTS } from '../utils/rescueScene';
+import { addReinforcements, createDefense, Defense, launchVolley, MAX_SHIELD, updateDefense } from '../utils/rescueDefense';
 import './rescue.css';
 
 const QUESTION_COUNT = 10;
 const READY_MS = 3000;
-const RUSH_MS = 240;
-const CORRECT_MS = 870;
-const REVIEW_MS = 1100;
+const ANSWER_LOCK_MS = 360;
+const FEEDBACK_MS = 1350;
 const TOWER_MS = 1700;
 
 type Lane = -1 | 0 | 1;
 type Result = 'correct' | 'wrong' | 'timeout';
-type Phase = 'ready' | 'question' | 'rush' | 'reward' | 'tower' | 'summary';
+type Phase = 'ready' | 'question' | 'finish' | 'tower' | 'summary';
 
 interface Answer {
   question: QuestionItem;
@@ -30,22 +29,22 @@ interface RunState {
   phase: Phase;
   phaseMs: number;
   elapsed: number;
-  distance: number;
+  feedbackMs: number;
+  targetLane: Lane;
   index: number;
   lane: number;
   selected: Lane;
-  approach: number;
-  rushFrom: number;
+
   energy: number;
   correct: number;
-  collected: number;
+
   records: Answer[];
   defense: Defense;
   reinforcements: number;
 }
 
-function makeRun(): RunState {
-  return { phase: 'ready', phaseMs: 0, elapsed: 0, distance: 0, index: 0, lane: 0, selected: 0, approach: 0, rushFrom: 0, energy: 0, correct: 0, collected: 0, records: [], defense: createDefense(), reinforcements: 0 };
+function makeRun(seconds: number): RunState {
+  return { phase: 'ready', phaseMs: 0, elapsed: 0, feedbackMs: 0, targetLane: 0, index: 0, lane: 0, selected: 0, energy: 0, correct: 0, records: [], defense: createDefense(seconds), reinforcements: 0 };
 }
 
 export default function RescueGame({ onChooseGame }: { onChooseGame: () => void }) {
@@ -60,7 +59,20 @@ export default function RescueGame({ onChooseGame }: { onChooseGame: () => void 
     setMuted(!muted);
   };
 
-  const start = () => {
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const start = async () => {
+    if (loading) return;
+    setLoading(true);
+    setLoadError(false);
+    try {
+      await prepareArena();
+    } catch {
+      setLoading(false);
+      setLoadError(true);
+      return;
+    }
+    setLoading(false);
     soundFX.setMuted(muted);
     soundFX.playLaneSelect();
     setMission({ id: (mission?.id ?? 0) + 1, questions: generateQuestionSet(mode, QUESTION_COUNT) });
@@ -68,9 +80,9 @@ export default function RescueGame({ onChooseGame }: { onChooseGame: () => void 
 
   if (!mission) {
     return (
-      <SettingsScreen game="rescue" onChooseGame={onChooseGame} selectedMode={mode} onSelectMode={setMode}
+      <><SettingsScreen game="rescue" starting={loading} onChooseGame={onChooseGame} selectedMode={mode} onSelectMode={setMode}
         questionDuration={seconds} onDurationChange={setSeconds} muted={muted} onToggleMute={toggleMute}
-        autoAdvance={autoAdvance} onToggleAutoAdvance={() => setAutoAdvance(value => !value)} onStart={start} />
+        autoAdvance={autoAdvance} onToggleAutoAdvance={() => setAutoAdvance(value => !value)} onStart={start} />{loadError && <p role="alert" className="text-center text-amber-200">場景載入失敗，請再按「開始遊戲」。</p>}</>
     );
   }
 
@@ -95,7 +107,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
   const canvas = useRef<HTMLCanvasElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const painter = useRef<ReturnType<typeof createRescuePainter> | null>(null);
-  const [initialRun] = useState(makeRun);
+  const [initialRun] = useState(() => makeRun(seconds));
   const run = useRef(initialRun);
   const pausedRef = useRef(false);
   const swipe = useRef<{ pointer: number; start: number } | null>(null);
@@ -108,7 +120,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
   const updateView = () => setView(readView());
   const limit = seconds * 1000;
   const question = questions[view.index];
-  const latest = view.phase === 'reward' ? view.records.at(-1) : undefined;
+  const latest = view.feedbackMs > 0 ? view.records.at(-1) : undefined;
   const layers = Math.ceil(view.correct / 2);
 
   function pause(next: boolean) {
@@ -117,19 +129,40 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
     setPaused(next);
   }
 
+  function finishQuestion(timeout: boolean) {
+    const state = run.current;
+    if (state.phase !== 'question') return;
+    const item = questions[state.index];
+    const chosen = timeout ? null : state.selected === -1 ? item.leftOption : state.selected === 1 ? item.rightOption : null;
+    const result: Result = timeout ? 'timeout' : chosen === item.correctAnswer ? 'correct' : 'wrong';
+    state.records = [...state.records, { question: item, chosen, result }];
+    if (result === 'correct') {
+      launchVolley(state.defense, state.lane, STARTING_ROBOTS + state.correct);
+      state.correct++;
+      state.energy += REWARD_TILES;
+      soundFX.playCorrectGate();
+    } else {
+      state.reinforcements = addReinforcements(state.defense);
+      soundFX.playWrongGate();
+    }
+    state.feedbackMs = FEEDBACK_MS;
+    state.selected = 0;
+    state.phaseMs = 0;
+    if (state.index + 1 === questions.length) state.phase = 'finish';
+    else state.index++;
+    updateView();
+  }
+
   function advance() {
     const state = run.current;
     if (pausedRef.current || state.phase !== 'question' || state.selected === 0) return;
-    state.phase = 'rush';
-    state.phaseMs = 0;
-    state.rushFrom = state.approach;
-    soundFX.playAdvanceCharge();
-    updateView();
+    finishQuestion(false);
   }
 
   function select(lane: Lane) {
     const state = run.current;
-    if (pausedRef.current || state.phase !== 'question') return;
+    if (pausedRef.current || state.phase !== 'question' || state.feedbackMs > FEEDBACK_MS - ANSWER_LOCK_MS) return;
+    state.targetLane = lane;
     if (state.selected !== lane) soundFX.playLaneSelect();
     state.selected = lane;
     if (autoAdvance) advance();
@@ -163,7 +196,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [autoAdvance]);
+  }, [autoAdvance, questions]);
 
   useEffect(() => {
     if (!canvas.current) return;
@@ -199,90 +232,36 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
       state.phaseMs = 0;
     };
 
-    const finishQuestion = () => {
-      const item = questions[state.index];
-      const chosen = state.selected === -1 ? item.leftOption : state.selected === 1 ? item.rightOption : null;
-      const result = chosen === null ? 'timeout' : chosen === item.correctAnswer ? 'correct' : 'wrong';
-      state.records = [...state.records, { question: item, chosen, result }];
-      state.collected = 0;
-      if (result === 'correct') {
-        state.correct += 1;
-        launchPulse(state.defense, state.selected);
-        soundFX.playCorrectGate();
-      } else {
-        state.reinforcements = addReinforcements(state.defense);
-        soundFX.playWrongGate();
-      }
-      enter('reward');
-    };
-
     const tick = (time: number) => {
       if (pausedRef.current || document.hidden) return;
       const dt = lastTime === null ? 0 : time - lastTime;
       lastTime = time;
       const previousPhase = state.phase;
-      const previousEnergy = state.energy;
-      // Simulation time and movement are independent of the display refresh rate.
+      const visualDt = Math.min(dt, 100);
       state.phaseMs += dt;
-      const visualDt = Math.min(dt, 50);
+      state.feedbackMs = Math.max(0, state.feedbackMs - dt);
       state.elapsed += visualDt / 1000;
-      state.distance += visualDt * (state.phase === 'rush' || state.phase === 'reward' ? .0055 : .0018);
-      state.lane = reducedMotion.matches ? state.selected : state.lane + (state.selected - state.lane) * (1 - Math.exp(-visualDt / 48));
+      state.lane += (state.targetLane - state.lane) * (reducedMotion.matches ? 1 : 1 - Math.exp(-visualDt / 65));
 
-      if (state.phase === 'question' || state.phase === 'rush' || state.phase === 'reward') {
+      if (state.phase === 'ready' && state.phaseMs >= READY_MS) enter('question');
+      if (state.phase === 'question' || state.phase === 'finish') {
         updateDefense(state.defense, visualDt);
         if (state.defense.shield === 0) enter('summary');
-      }
-
-      const record = state.records.at(-1);
-      if (state.phase === 'ready' && state.phaseMs >= READY_MS) {
-        enter('question');
-      } else if (state.phase === 'question') {
-        state.approach = Math.min(1, state.phaseMs / limit);
-        if (state.phaseMs >= limit) finishQuestion();
-      } else if (state.phase === 'rush') {
-        state.approach = state.rushFrom + (1 - state.rushFrom) * Math.min(1, state.phaseMs / RUSH_MS);
-        if (state.phaseMs >= RUSH_MS) finishQuestion();
-      } else if (state.phase === 'reward' && record) {
-        if (record.result === 'correct') {
-          const collected = Math.max(0, Math.min(REWARD_TILES, 1 + Math.floor((state.phaseMs - 130) / 145)));
-          if (collected > state.collected) {
-            state.energy += collected - state.collected;
-            state.collected = collected;
-            soundFX.playLaneSelect();
-          }
-        }
-
-        if (state.phaseMs >= (record.result === 'correct' ? CORRECT_MS : REVIEW_MS)) {
-          if (state.index + 1 === questions.length) {
-            if (state.correct > 0) soundFX.playVictoryFanfare();
-            enter('tower');
-          } else {
-            state.index += 1;
-            state.approach = 0;
-            state.selected = 0;
-            if (state.defense.drones.length < 10) addWave(state.defense, 13 + state.index);
-            enter('question');
-          }
+        else if (state.phase === 'question' && state.phaseMs >= limit) finishQuestion(true);
+        else if (state.phase === 'finish' && state.phaseMs >= FEEDBACK_MS) {
+          if (state.correct > 0) soundFX.playVictoryFanfare();
+          enter('tower');
         }
       } else if (state.phase === 'tower' && state.phaseMs >= TOWER_MS) {
         enter('summary');
       }
-
-      const item = questions[state.index];
       painter.current?.({
-        elapsed: state.elapsed, distance: state.distance, lane: state.lane, selected: state.selected,
-        approach: state.approach, rush: state.phase === 'rush',
-        team: STARTING_ROBOTS + state.correct - Number(state.phase === 'reward' && state.records.at(-1)?.result === 'correct' && state.phaseMs < 570),
-        options: [item.leftOption, item.rightOption],
-        result: state.phase === 'reward' ? state.records.at(-1)?.result ?? null : null,
-        rewardElapsed: state.phaseMs,
+        elapsed: state.elapsed, lane: state.lane, team: STARTING_ROBOTS + state.correct,
         charge: state.phase === 'tower' ? state.phaseMs / TOWER_MS : null,
-        layers: Math.ceil(state.correct / 2),
-        defense: state.defense
+        layers: Math.ceil(state.correct / 2), defense: state.defense
       }, reducedMotion.matches);
 
-      if (previousPhase !== state.phase || previousEnergy !== state.energy || time - lastUpdate >= 100) {
+      if (previousPhase !== state.phase || time - lastUpdate >= 100) {
         lastUpdate = time;
         updateView();
       }
@@ -292,7 +271,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
     return () => cancelAnimationFrame(handle);
   }, [paused, limit, questions]);
 
-  const canAnswer = view.phase === 'question' && !paused;
+  const canAnswer = view.phase === 'question' && !paused && view.feedbackMs <= FEEDBACK_MS - ANSWER_LOCK_MS;
   const inQuestion = view.phase !== 'tower' && view.phase !== 'summary';
   const remaining = view.phase === 'ready' ? seconds : view.phase === 'question' ? Math.max(0, (limit - view.phaseMs) / 1000) : 0;
 
@@ -355,11 +334,11 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
               </div>
             )}
             {latest && (
-              <div className={`rescue-feedback ${latest.result === 'correct' ? 'rescue-feedback-good' : 'rescue-feedback-review'}`} role="status">
+              <div key={latest.question.id} className={`rescue-feedback ${latest.result === 'correct' ? 'rescue-feedback-good' : 'rescue-feedback-review'}`} role="status">
                 {latest.result === 'correct' ? (
-                  <><CheckCircle2 size={22} /> <span>能量波發射！{view.collected > 0 && ` ＋${view.collected} 能量`}</span></>
+                  <><CheckCircle2 size={22} /> <span>答對！能量連射 · ＋{REWARD_TILES} 能量</span></>
                 ) : (
-                  <><CircleX size={22} /> <span>{latest.result === 'timeout' ? '時間到' : '再接再厲'} · 正確答案 {latest.question.correctAnswer}<br />{view.reinforcements ? `怪物增援 ＋${view.reinforcements}` : '怪物仍在逼近'}</span></>
+                  <><CircleX size={22} /> <span>{latest.result === 'timeout' ? '時間到' : '再接再厲'} · 正確答案 {latest.question.correctAnswer} · {view.reinforcements ? `怪物增援 ＋${view.reinforcements}` : '怪物仍在逼近'}</span></>
                 )}
               </div>
             )}

@@ -1,9 +1,7 @@
 export const MAX_SHIELD = 100;
 export const FIRST_WAVE = 22;
 export const MAX_DRONES = 76;
-const IMPACT_LINE = 0.94;
-const PULSE_START = 0.86;
-const PULSE_TRAVEL = 620;
+const BREACH = .95;
 
 export interface Drone {
   id: number;
@@ -11,100 +9,103 @@ export interface Drone {
   depth: number;
   speed: number;
   variant: number;
+  targeted: boolean;
 }
 
-export interface PulseHit {
-  x: number;
-  depth: number;
+export interface Bolt {
+  target: Drone | null;
   age: number;
+  duration: number;
+  lane: number;
+  slot: number;
 }
 
 export interface Defense {
   drones: Drone[];
-  hits: PulseHit[];
+  bolts: Bolt[];
+  hits: { x: number; depth: number; age: number }[];
   shield: number;
   disabled: number;
   streak: number;
   misses: number;
   lastHit: number;
-  pulse: { age: number; front: number; remaining: number; lane: number } | null;
   nextId: number;
+  untilSpawn: number;
+  reinforcements: number;
+  pace: number;
 }
 
-export function createDefense(): Defense {
-  const defense: Defense = {
-    drones: [], hits: [], shield: MAX_SHIELD, disabled: 0, streak: 0,
-    misses: 0, lastHit: 1000, pulse: null, nextId: 0
-  };
-  addWave(defense, FIRST_WAVE, true);
-  return defense;
+function spawn(d: Defense, depth: number) {
+  const id = d.nextId++;
+  // A low-discrepancy column order spreads consecutive arrivals across the bridge.
+  const x = ((id * .61803398875 + .5) % 1 - .5) * 302;
+  d.drones.push({ id, x, depth, speed: .029 + id % 7 * .0015, variant: id % 4 === 0 ? 1 : 0, targeted: false });
 }
 
-export function addWave(defense: Defense, count: number, opening = false) {
-  const added = Math.min(count, MAX_DRONES - defense.drones.length);
-  const columns = 7;
-  for (let i = 0; i < added; i++) {
-    const id = defense.nextId++;
-    const row = Math.floor(i / columns);
-    const col = i % columns;
-    defense.drones.push({
-      id,
-      x: (col - 3) * 46 + Math.sin(id * 2.62) * 8,
-      depth: (opening ? .40 : .16) - row * .095 + Math.sin(id * 4.77) * .018,
-      speed: .032 + (id % 5) * .003,
-      variant: id % 4 === 0 ? 1 : 0
-    });
+export function createDefense(seconds = 8): Defense {
+  const d: Defense = { drones: [], bolts: [], hits: [], shield: MAX_SHIELD, disabled: 0, streak: 0,
+    misses: 0, lastHit: 1000, nextId: 0, untilSpawn: 350, reinforcements: 0,
+    pace: Math.min(1.35, 8 / seconds) };
+  for (let i = 0; i < FIRST_WAVE; i++) spawn(d, .49 - i * .021);
+  return d;
+}
+
+export function addReinforcements(d: Defense) {
+  d.streak = 0;
+  d.misses++;
+  const added = Math.min(9 + Math.min(9, (d.misses - 1) * 2), MAX_DRONES - d.drones.length - d.reinforcements);
+  d.reinforcements += Math.max(0, added);
+  d.untilSpawn = Math.min(d.untilSpawn, 80);
+  return Math.max(0, added);
+}
+
+export function launchVolley(d: Defense, lane: number, team: number) {
+  d.streak++;
+  // Target the front of the column. Keep the distant procession visible behind it.
+  const front = d.drones.filter(m => m.depth > .065 && !m.targeted).sort((a, b) => b.depth - a.depth);
+  const count = Math.min(8 + d.streak * 2, 22, Math.ceil(front.length * .60));
+  if (count === 0) d.bolts.push({ target: null, age: 0, duration: 480, lane, slot: 0 });
+  for (let i = 0; i < count; i++) {
+    const target = front[i];
+    target.targeted = true;
+    d.bolts.push({ target, age: -Math.floor(i / 3) * 65, duration: 180 + 300 * (1 - target.depth), lane, slot: i % team });
   }
-  return added;
 }
 
-export function launchPulse(defense: Defense, lane: number) {
-  defense.streak++;
-  defense.pulse = {
-    age: 0,
-    front: PULSE_START,
-    remaining: 11 + Math.min(17, defense.streak * 3),
-    lane
-  };
-}
-
-export function addReinforcements(defense: Defense) {
-  defense.streak = 0;
-  defense.misses++;
-  return addWave(defense, 9 + Math.min(9, (defense.misses - 1) * 2));
-}
-
-export function updateDefense(defense: Defense, dt: number) {
-  defense.lastHit += dt;
-  for (let i = defense.hits.length - 1; i >= 0; i--) {
-    const hit = defense.hits[i];
-    hit.age += dt;
-    if (hit.age > 430) defense.hits.splice(i, 1);
+export function updateDefense(d: Defense, dt: number) {
+  d.lastHit += dt;
+  for (let i = d.hits.length - 1; i >= 0; i--) {
+    if ((d.hits[i].age += dt) >= 350) d.hits.splice(i, 1);
   }
-
-  const pulse = defense.pulse;
-  if (pulse) {
-    pulse.age += dt;
-    pulse.front = PULSE_START - Math.min(1, pulse.age / PULSE_TRAVEL) * 1.12;
-    if (pulse.age > PULSE_TRAVEL + 90) defense.pulse = null;
+  d.untilSpawn -= dt * d.pace;
+  while (d.untilSpawn <= 0) {
+    const extra = d.reinforcements > 0;
+    if (d.drones.length < MAX_DRONES) {
+      spawn(d, 0);
+      if (extra) d.reinforcements--;
+    }
+    d.untilSpawn += extra ? 115 : Math.max(370, 710 - d.misses * 45);
   }
 
-  // Visit the nearest targets first so a pulse shields the player from the front row.
-  defense.drones.sort((a, b) => b.depth - a.depth);
-  for (let i = 0; i < defense.drones.length;) {
-    const drone = defense.drones[i];
-    drone.depth += (drone.speed + Math.min(.055, defense.misses * .009)) * dt / 1000;
-    if (pulse && pulse.remaining > 0 && pulse.age <= PULSE_TRAVEL + 90 && drone.depth >= pulse.front) {
-      pulse.remaining--;
-      defense.disabled++;
-      defense.hits.push({ x: drone.x, depth: drone.depth, age: 0 });
-      defense.drones.splice(i, 1);
-    } else if (drone.depth >= IMPACT_LINE) {
-      defense.shield = Math.max(0, defense.shield - 8);
-      defense.lastHit = 0;
-      defense.drones.splice(i, 1);
-    } else {
-      i++;
+  const speedBoost = Math.min(.022, d.misses * .004);
+  for (const monster of d.drones) monster.depth += (monster.speed + speedBoost) * dt * .001 * d.pace;
+  for (let i = d.bolts.length - 1; i >= 0; i--) {
+    const bolt = d.bolts[i];
+    if ((bolt.age += dt) < bolt.duration) continue;
+    const target = bolt.target;
+    if (target) {
+      d.hits.push({ x: target.x, depth: target.depth, age: 0 });
+      d.drones.splice(d.drones.indexOf(target), 1);
+      d.disabled++;
+    }
+    d.bolts.splice(i, 1);
+  }
+  for (let i = d.drones.length - 1; i >= 0; i--) {
+    if (d.drones[i].depth >= BREACH && !d.drones[i].targeted) {
+      d.drones.splice(i, 1);
+      d.shield = Math.max(0, d.shield - 8);
+      d.lastHit = 0;
     }
   }
+  d.drones.sort((a, b) => b.depth - a.depth);
 }
