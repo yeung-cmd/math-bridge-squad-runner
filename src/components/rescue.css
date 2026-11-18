@@ -126,10 +126,11 @@
   align-items: center;
   justify-content: center;
   position: absolute;
-  inset: 1rem auto auto 50%;
+  inset: auto auto .35rem 50%;
+  pointer-events: none;
   translate: -50% 0;
   gap: .45rem;
-  padding: .6rem .75rem;
+  padding: .28rem .65rem;
   border: 2px solid;
   border-radius: 14px;
   font-size: clamp(.85rem, 3.6vw, 1rem);

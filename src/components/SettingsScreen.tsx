@@ -15,6 +15,7 @@ interface Props {
   progress?: ProgressMap;
   game?: 'bridge' | 'rescue';
   onChooseGame: () => void;
+  starting?: boolean;
   onStart: () => void;
 }
 
@@ -54,18 +55,18 @@ export function SettingsScreen(props: Props) {
               {[5, 8, 10, 15].map(sec => <button key={sec} aria-pressed={props.questionDuration === sec} onClick={() => props.onDurationChange(sec)} className={`rounded-xl border-2 py-3 font-black cursor-pointer transition-colors ${props.questionDuration === sec ? 'bg-amber-300 border-amber-100 text-slate-950' : 'bg-slate-900 border-white/15'}`}>{sec}<span className="block text-xs mt-1">秒</span></button>)}
             </div>
             <p className="text-xs text-slate-400 mt-3">初次遊玩可選 10 秒或 15 秒，慢慢思考。</p>
-            <button onClick={props.onToggleAutoAdvance} aria-pressed={props.autoAdvance} className="flex items-center justify-between gap-3 w-full p-3 mt-5 rounded-xl bg-slate-950/40 text-sm text-left cursor-pointer"><span>選好跑道後自動衝刺</span><span className={`rounded-full px-3 py-1 text-xs font-bold ${props.autoAdvance ? 'bg-cyan-300 text-slate-950' : 'bg-slate-700'}`}>{props.autoAdvance ? '開啟' : '關閉'}</span></button>
+            <button onClick={props.onToggleAutoAdvance} aria-pressed={props.autoAdvance} className="flex items-center justify-between gap-3 w-full p-3 mt-5 rounded-xl bg-slate-950/40 text-sm text-left cursor-pointer"><span>{isRescue ? '選好答案後自動確認' : '選好跑道後自動衝刺'}</span><span className={`rounded-full px-3 py-1 text-xs font-bold ${props.autoAdvance ? 'bg-cyan-300 text-slate-950' : 'bg-slate-700'}`}>{props.autoAdvance ? '開啟' : '關閉'}</span></button>
             <button onClick={props.onToggleMute} className="flex items-center justify-between w-full p-3 mt-2 rounded-xl bg-slate-950/40 text-sm cursor-pointer"><span>{isRescue ? '遊戲音效' : '音效及背景音樂'}</span>{props.muted ? <VolumeX size={20} /> : <Volume2 size={20} className="text-cyan-300" />}</button>
           </section>
           <section className="setup-card p-5 text-sm text-slate-300">
             <h2 className="font-black text-white mb-3">怎樣遊玩？</h2>
-            <p className="leading-7">閱讀題目 <ArrowRight className="inline mx-1" size={14} /> 選擇左右跑道<br />{isRescue ? '選道後按「確認並發射」。答對可發出能量波擊退怪物。答錯或超時，會有更多怪物逼近。' : '按「前進」衝線，答對可增加士兵和升級武器。'}</p>
+            <p className="leading-7">閱讀題目 <ArrowRight className="inline mx-1" size={14} /> 選擇左右跑道<br />{isRescue ? '怪物會持續從橋的另一端逼近。選好答案後按「確認並發射」，答對可發動能量連射。答錯或超時會招來增援。' : '按「前進」衝線，答對可增加士兵和升級武器。'}</p>
             <p className="text-xs text-slate-400 mt-3">{isRescue ? '鍵盤：← → 選擇跑道，空白鍵發射。' : '鍵盤：← → 選擇跑道，空白鍵前進。'}</p>
           </section>
         </div>
       </div>
       <div className="mt-6 text-center">
-        <button type="button" onClick={props.onStart} className="start-button inline-flex justify-center items-center gap-3 rounded-2xl bg-amber-300 text-slate-950 px-12 py-4 text-xl font-black cursor-pointer w-full sm:w-auto"><Play className="fill-current" /> 開始遊戲</button>
+        <button type="button" disabled={props.starting} onClick={props.onStart} className="start-button inline-flex justify-center items-center gap-3 rounded-2xl bg-amber-300 text-slate-950 px-12 py-4 text-xl font-black cursor-pointer w-full sm:w-auto"><Play className="fill-current" /> {props.starting ? '正在載入場景…' : '開始遊戲'}</button>
         <p className="text-xs text-slate-400 mt-4">{QUESTION_MODES[props.selectedMode].title} · 每題 {props.questionDuration} 秒 · {count} 題</p>
       </div>
     </main>
