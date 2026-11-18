@@ -33,7 +33,7 @@ export default function GameHub() {
           <button type="button" className="game-card game-card-rescue" onClick={() => setGame('rescue')}>
             <span className="game-card-icon"><RadioTower size={44} aria-hidden="true" /></span>
             <span className="text-2xl font-black">數學星光救援隊</span>
-            <span className="text-slate-300 text-sm">答對發射能量波，阻止機械人群攻入燈塔。</span>
+            <span className="text-slate-300 text-sm">答對發射能量波，擊退逼近燈塔的怪物群。</span>
             <span className="game-card-action">進入設定 <ArrowRight size={18} /></span>
           </button>
         </div>
