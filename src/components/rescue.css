@@ -187,3 +187,23 @@
 @media (prefers-reduced-motion: reduce) {
   .rescue-feedback, .rescue-timer > div { animation: none; transition: none; }
 }
+
+.rescue-hud { gap: .42rem; padding-inline: .62rem; }
+.rescue-hud span { font-size: clamp(.68rem, 2.5vw, .84rem); white-space: nowrap; }
+.rescue-hud strong { font-size: clamp(.96rem, 3.7vw, 1.25rem); }
+.rescue-hud .rescue-danger, .rescue-hud .rescue-danger strong, .rescue-hud .rescue-danger svg { color: #ffb4a4; }
+.rescue-shield {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 5px;
+  margin: 0 .65rem .45rem;
+  border: 0;
+  background: #344267;
+  color: #76f3d7;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.rescue-shield::-webkit-progress-bar { background: #344267; }
+.rescue-shield::-webkit-progress-value { background: #76f3d7; transition: width .15s; }
+.rescue-shield::-moz-progress-bar { background: #76f3d7; }
