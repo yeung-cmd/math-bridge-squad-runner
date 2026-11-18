@@ -42,7 +42,7 @@ const DEFAULT_PROGRESS: ProgressMap = {
   MULTIPLY_DIGITS: { highScore: 0, bestTroops: 0, stars: 0, gamesPlayed: 0 }
 };
 
-export default function App() {
+export default function App({ onChooseGame }: { onChooseGame: () => void }) {
   const [screen, setScreen] = useState<'SETUP' | 'GAME'>('SETUP');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [selectedMode, setSelectedMode] = useState<QuestionModeId>('ADD_20');
@@ -389,6 +389,7 @@ export default function App() {
   };
 
   if (screen === 'SETUP') return <SettingsScreen
+    onChooseGame={onChooseGame}
     selectedMode={selectedMode} onSelectMode={setSelectedMode}
     questionDuration={questionDuration} onDurationChange={setQuestionDuration}
     muted={muted} onToggleMute={handleToggleMute}
