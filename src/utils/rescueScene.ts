@@ -1,3 +1,4 @@
+import { paintMonster } from './rescueMonsters';
 import type { Defense } from './rescueDefense';
 
 export const SCENE_WIDTH = 400;
@@ -153,7 +154,7 @@ function badge(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, a
   ctx.restore();
 }
 
-function makeRobot(enemy: boolean, leader: boolean) {
+function makeRobot(leader: boolean) {
   const sprite = document.createElement('canvas');
   sprite.width = 136;
   sprite.height = 164;
@@ -161,9 +162,9 @@ function makeRobot(enemy: boolean, leader: boolean) {
   ctx.scale(2, 2);
   ctx.translate(34, 68);
 
-  const light = enemy ? (leader ? '#ffe6a6' : '#ffc0ad') : (leader ? '#fff2ab' : '#bdfff2');
-  const base = enemy ? (leader ? '#eab860' : '#e47a69') : (leader ? '#e9b663' : '#49bec8');
-  const edge = enemy ? '#643845' : '#28526b';
+  const light = leader ? '#fff2ab' : '#bdfff2';
+  const base = leader ? '#e9b663' : '#49bec8';
+  const edge = '#28526b';
   const metal = ctx.createLinearGradient(-22, -52, 19, -19);
   metal.addColorStop(0, '#253147');
   metal.addColorStop(.34, base);
@@ -187,7 +188,7 @@ function makeRobot(enemy: boolean, leader: boolean) {
   ctx.fill();
   polygon(ctx, [-21, -47, -16, -54, 13, -55, 20, -49, 17, -36, -19, -33], '#142842');
   polygon(ctx, [-19, -47, -13, -51, 15, -53, 18, -49, 15, -40, -18, -37], '#203c58');
-  const lamp = enemy ? '#ff9f71' : '#7ffff4';
+  const lamp = '#7ffff4';
   ctx.shadowColor = lamp;
   ctx.shadowBlur = 8;
   rect(ctx, -5, -26, 10, 8, 3, lamp);
@@ -211,16 +212,17 @@ function paintRobot(ctx: CanvasRenderingContext2D, sprite: HTMLCanvasElement, x:
   ctx.drawImage(sprite, x - 34 * scale * width, y + bob - 68 * scale, 68 * scale * width, 82 * scale);
 }
 
-function drawDrones(ctx: CanvasRenderingContext2D, frame: RescueFrame, reduced: boolean, sprites: HTMLCanvasElement[]) {
+function drawMonsters(ctx: CanvasRenderingContext2D, frame: RescueFrame, reduced: boolean) {
   const { drones, hits } = frame.defense;
+  const aspect = Math.min(1.2, ctx.canvas.height * SCENE_WIDTH / (ctx.canvas.width * SCENE_HEIGHT));
   for (let i = drones.length - 1; i >= 0; i--) {
     const drone = drones[i];
     if (drone.depth < 0) continue;
     const x = roadX(drone.x + (reduced ? 0 : Math.sin(frame.elapsed * 3 + drone.id) * 5), drone.depth);
     const y = roadY(drone.depth);
     const scale = .22 + drone.depth * .63;
-    const bob = reduced ? 0 : -Math.abs(Math.sin(frame.elapsed * 13 + drone.id * .7)) * scale * 6;
-    paintRobot(ctx, sprites[drone.variant], x, y, scale, bob);
+    const phase = frame.elapsed * (drone.variant ? 1.9 : 1.35) + drone.id * .37;
+    paintMonster(ctx, drone.variant, x, y, scale, phase, aspect, reduced);
   }
   for (const hit of hits) {
     const x = roadX(hit.x, hit.depth);
@@ -345,8 +347,7 @@ export function createRescuePainter(ctx: CanvasRenderingContext2D) {
   const skyContext = sky.getContext('2d')!;
   skyContext.scale(2, 2);
   paintSky(skyContext);
-  const friendly = [makeRobot(false, false), makeRobot(false, true)];
-  const enemy = [makeRobot(true, false), makeRobot(true, true)];
+  const friendly = [makeRobot(false), makeRobot(true)];
 
   return (frame: RescueFrame, reduced: boolean) => {
     ctx.drawImage(sky, 0, 0, SCENE_WIDTH, SCENE_HEIGHT);
@@ -362,7 +363,7 @@ export function createRescuePainter(ctx: CanvasRenderingContext2D) {
     rect(ctx, 181, 74, 38, 17, 5, '#a95163');
     rect(ctx, 185, 77, 30, 13, 4, '#ffc394');
     rect(ctx, 10, 397, 380, 3, 1, '#ffe094ba');
-    drawDrones(ctx, frame, reduced, enemy);
+    drawMonsters(ctx, frame, reduced);
     drawPulse(ctx, frame, reduced);
     if (frame.defense.lastHit < 330) {
       ctx.globalAlpha = .8 * (1 - frame.defense.lastHit / 330);

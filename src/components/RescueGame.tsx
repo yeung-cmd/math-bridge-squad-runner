@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, BatteryCharging, Bot, CheckCircle2, CircleX, Pause, RadioTower, Shield, Zap, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, BatteryCharging, PawPrint, CheckCircle2, CircleX, Pause, RadioTower, Shield, Zap, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { SettingsScreen } from './SettingsScreen';
 import { PauseModal } from './PauseModal';
 import { QuestionItem, QuestionModeId } from '../types/game';
@@ -310,7 +310,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
         <main className="rescue-board">
           <div className="rescue-hud">
             <span><BatteryCharging size={20} aria-hidden="true" /> 能量 <strong>{view.energy}</strong></span>
-            <span><Bot size={20} aria-hidden="true" /> 敵群 <strong>{view.incoming}</strong></span>
+            <span><PawPrint size={20} aria-hidden="true" /> 怪物 <strong>{view.incoming}</strong></span>
             <span className={view.shield <= 32 ? 'rescue-danger' : ''}><Shield size={18} aria-hidden="true" /> 護盾 <strong>{view.shield}%</strong></span>
             <button type="button" onClick={() => pause(true)} aria-label="暫停遊戲" className="rescue-icon"><Pause size={19} /></button>
           </div>
@@ -359,7 +359,7 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
                 {latest.result === 'correct' ? (
                   <><CheckCircle2 size={22} /> <span>能量波發射！{view.collected > 0 && ` ＋${view.collected} 能量`}</span></>
                 ) : (
-                  <><CircleX size={22} /> <span>{latest.result === 'timeout' ? '時間到' : '再接再厲'} · 正確答案 {latest.question.correctAnswer}<br />{view.reinforcements ? `敵方增援 ＋${view.reinforcements}` : '敵群仍在逼近'}</span></>
+                  <><CircleX size={22} /> <span>{latest.result === 'timeout' ? '時間到' : '再接再厲'} · 正確答案 {latest.question.correctAnswer}<br />{view.reinforcements ? `怪物增援 ＋${view.reinforcements}` : '怪物仍在逼近'}</span></>
                 )}
               </div>
             )}
@@ -395,7 +395,7 @@ function RescueSummary({ view, onSettings, onRestart }: { view: Omit<RunState, '
       <dl className="grid grid-cols-3 gap-2 text-center">
         <div><dt>答對</dt><dd>{view.correct}／{view.records.length}</dd></div>
         <div><dt>能量</dt><dd>{view.energy}</dd></div>
-        <div><dt>停機敵方</dt><dd>{view.disabled}</dd></div>
+        <div><dt>擊退怪物</dt><dd>{view.disabled}</dd></div>
       </dl>
 
       <section aria-labelledby="rescue-review">

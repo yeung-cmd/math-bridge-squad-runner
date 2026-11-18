@@ -59,7 +59,7 @@ export function SettingsScreen(props: Props) {
           </section>
           <section className="setup-card p-5 text-sm text-slate-300">
             <h2 className="font-black text-white mb-3">怎樣遊玩？</h2>
-            <p className="leading-7">閱讀題目 <ArrowRight className="inline mx-1" size={14} /> 選擇左右跑道<br />{isRescue ? '選道後按「確認並發射」。答對會發出能量波，答錯或超時會有敵方增援。' : '按「前進」衝線，答對可增加士兵和升級武器。'}</p>
+            <p className="leading-7">閱讀題目 <ArrowRight className="inline mx-1" size={14} /> 選擇左右跑道<br />{isRescue ? '選道後按「確認並發射」。答對可發出能量波擊退怪物。答錯或超時，會有更多怪物逼近。' : '按「前進」衝線，答對可增加士兵和升級武器。'}</p>
             <p className="text-xs text-slate-400 mt-3">{isRescue ? '鍵盤：← → 選擇跑道，空白鍵發射。' : '鍵盤：← → 選擇跑道，空白鍵前進。'}</p>
           </section>
         </div>
