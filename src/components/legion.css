@@ -1,0 +1,25 @@
+.legion-board { width:min(100%,480px); height:min(810px,calc(100svh - 75px)); min-height:455px; display:flex; flex-direction:column; position:relative; overflow:hidden; background:#142942; border:1px solid #47627b; border-radius:22px; box-shadow:0 15px 50px #06142766; }
+.legion-hud,.legion-meta,.legion-missions,.legion-lanes,.legion-advance { display:flex; align-items:center; }
+.legion-hud { gap:.7rem; padding:.4rem .7rem; font-size:.85rem; font-weight:700; }
+.legion-hud b { color:#ffdc8a; font-size:1.2rem; font-variant-numeric:tabular-nums; }
+.legion-weapon { margin-left:auto; color:#9fe8e8; }
+.legion-hud button { border:1px solid #7290a9; border-radius:8px; min-width:40px; min-height:38px; cursor:pointer; }
+.legion-question { margin:0 .55rem .45rem; padding:.4rem .75rem; border-radius:12px; background:#0c1d33; border:1px solid #587587; }
+.legion-meta,.legion-missions { justify-content:space-between; gap:5px; color:#bcd6e4; font-size:clamp(.65rem,2.6vw,.8rem); font-weight:700; font-variant-numeric:tabular-nums; }
+.legion-question h2 { text-align:center; font-size:clamp(1.3rem,5.5vw,2rem); line-height:1.24; font-weight:900; margin:.22rem 0; }
+.legion-question progress { display:block; width:100%; height:4px; accent-color:#78e5cd; }
+.legion-stage { position:relative; flex:1; min-height:0; isolation:isolate; }
+.legion-field { display:block; width:100%; height:100%; touch-action:manipulation; }
+.legion-feedback,.legion-mission-toast { position:absolute; left:50%; transform:translateX(-50%); width:max-content; max-width:96%; bottom:2%; padding:.25rem .65rem; border-radius:10px; pointer-events:none; font-weight:800; text-align:center; font-size:.9rem; border:1px solid #d9c495; }
+.legion-feedback.good {background:#105859; color:#f2fff6;} .legion-feedback.review {background:#603a20;color:#fff4cd;}
+.legion-mission-toast {top:2%;bottom:auto;background:#1f3049ed;color:#ffe29f;}
+.legion-controls { padding:.4rem .6rem .6rem; }
+.legion-missions { margin:0 .12rem .35rem; }
+.legion-lanes { gap:.55rem; }
+.legion-lanes button,.legion-advance { border-radius:10px; font-weight:900; min-height:43px; cursor:pointer; }
+.legion-lanes button { flex:1; border:2px solid #829fba; background:#233f60; font-size:1.35rem; }
+.legion-lanes small { font-size:.75rem; color:#cae0ed; }
+.legion-lanes button[aria-pressed=true] { background:#116267; border-color:#8bf1e5; }
+.legion-advance { width:100%; margin:.4rem 0 0; justify-content:center; gap:7px; background:#ffda83; color:#242e3d; }
+.legion-advance:disabled { opacity:.53; }
+.legion-result-line { min-height:118px; display:grid; place-items:center; text-align:center; padding:1rem; color:#ffe1a2; font-weight:800; }

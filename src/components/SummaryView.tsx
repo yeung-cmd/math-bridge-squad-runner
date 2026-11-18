@@ -122,7 +122,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               <div className="flex items-center gap-2 shrink-0 tabular-nums">
                 {!rec.isCorrect && (
                   <span className="text-rose-400 line-through">
-                    你揀: {rec.chosenAnswer}
+                    {rec.chosenAnswer === null ? '未作答' : `所選答案：${rec.chosenAnswer}`}
                   </span>
                 )}
                 <span className="font-black text-amber-300">
