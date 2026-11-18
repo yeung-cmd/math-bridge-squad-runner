@@ -48,7 +48,7 @@ export interface QuestionItem {
 export interface AnswerRecord {
   questionIndex: number;
   prompt: string;
-  chosenAnswer: number;
+  chosenAnswer: number | null;
   correctAnswer: number;
   isCorrect: boolean;
   troopsDelta: number;

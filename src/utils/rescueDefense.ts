@@ -72,13 +72,13 @@ export function launchVolley(d: Defense, lane: number, team: number) {
   }
 }
 
-export function updateDefense(d: Defense, dt: number) {
+export function updateDefense(d: Defense, dt: number, arrivals = true) {
   d.lastHit += dt;
   for (let i = d.hits.length - 1; i >= 0; i--) {
     if ((d.hits[i].age += dt) >= 350) d.hits.splice(i, 1);
   }
   d.untilSpawn -= dt * d.pace;
-  while (d.untilSpawn <= 0) {
+  while (arrivals && d.untilSpawn <= 0) {
     const extra = d.reinforcements > 0;
     if (d.drones.length < MAX_DRONES) {
       spawn(d, 0);

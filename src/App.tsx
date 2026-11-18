@@ -21,6 +21,9 @@ import {
   QUESTIONS_PER_LEVEL
 } from './utils/questionGenerator';
 import { soundFX } from './utils/sound';
+import { prepareBridge } from './utils/bridgeField';
+import { addReinforcements, createDefense, launchVolley } from './utils/rescueDefense';
+import './components/legion.css';
 import { BridgeScene } from './components/BridgeScene';
 import { BossBattleView } from './components/BossBattleView';
 import { SummaryView } from './components/SummaryView';
@@ -64,7 +67,12 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
   const [troops, setTroops] = useState<number>(QUESTION_MODES.ADD_20.initialTroops);
   const [score, setScore] = useState<number>(120);
   const [correctCount, setCorrectCount] = useState<number>(4);
-  const [selectedLane, setSelectedLane] = useState<Lane>('LEFT');
+  const [selectedLane, setSelectedLane] = useState<Lane | null>(null);
+
+  const [defense, setDefense] = useState(() => createDefense());
+  const [bossHp, setBossHp] = useState(600);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   // Gate continuous approach progress (0.0 at horizon -> 1.0 when reaching soldiers)
   const gateProgress = useMotionValue(0);
@@ -133,7 +141,12 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
   );
 
   // Start a fresh game in the specified mode
-  const startNewGame = useCallback((modeId: QuestionModeId) => {
+  const startNewGame = useCallback(async (modeId: QuestionModeId) => {
+    setLoading(true);
+    setLoadError(false);
+    try { await prepareBridge(); }
+    catch { setLoadError(true); setLoading(false); return; }
+    setLoading(false);
     if (impactTimeoutRef.current) {
       window.clearTimeout(impactTimeoutRef.current);
     }
@@ -146,7 +159,9 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
     setTroops(cfg.initialTroops);
     setScore(0);
     setCorrectCount(0);
-    setSelectedLane('LEFT');
+    setSelectedLane(null);
+    setDefense(createDefense(questionDuration));
+    setBossHp(cfg.bossMaxHp);
     gateProgress.set(0);
     setQuestionSecondsLeft(questionDuration);
     setIsAdvancing(false);
@@ -191,16 +206,14 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
     if (hasTriggeredImpactRef.current) return;
     hasTriggeredImpactRef.current = true;
 
-    const activeLane = selectedLane || 'LEFT';
-    const chosenAnswer =
-      activeLane === 'LEFT'
-        ? currentQuestion.leftOption
-        : currentQuestion.rightOption;
-    const isCorrect = activeLane === currentQuestion.correctLane;
+    const submitted = isAdvancing && selectedLane !== null;
+    const chosenAnswer = submitted ? (selectedLane === 'LEFT' ? currentQuestion.leftOption : currentQuestion.rightOption) : null;
+    const isCorrect = submitted && selectedLane === currentQuestion.correctLane;
 
     setImpactResult(isCorrect ? 'CORRECT' : 'WRONG');
 
     if (isCorrect) {
+      launchVolley(defense, selectedLane === 'LEFT' ? -1 : 1, Math.min(troops, 64));
       const prevWeapon = getWeaponForCorrectCount(correctCount);
       const nextCorrectCount = correctCount + 1;
       const nextWeapon = getWeaponForCorrectCount(nextCorrectCount);
@@ -227,13 +240,14 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
         });
       }
     } else {
+      addReinforcements(defense);
       soundFX.playWrongGate();
       const lostTroops = currentQuestion.penaltyTroops;
       setTroops((t) => Math.max(1, t - lostTroops));
       setCorrectCount((c) => Math.max(0, c - 1));
       setFloatingFeedback({
-        text: `-${lostTroops} 士兵`,
-        subtext: `正確答案係 ${currentQuestion.correctAnswer}`,
+        text: `${submitted ? "再試一次" : "時間到"} · －${Math.min(troops - 1, lostTroops)} 士兵`,
+        subtext: `正確答案是 ${currentQuestion.correctAnswer}`,
         isPositive: false
       });
     }
@@ -248,11 +262,11 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
         isCorrect,
         troopsDelta: isCorrect
           ? currentQuestion.rewardTroops
-          : -currentQuestion.penaltyTroops
+          : -Math.min(troops - 1, currentQuestion.penaltyTroops)
       }
     ]);
 
-  }, [selectedLane, currentQuestion, correctCount, currentIdx, questions.length]);
+  }, [selectedLane, currentQuestion, correctCount, defense, troops, isAdvancing]);
 
   // Feedback is held while paused; leaving the game cancels pending transitions.
   useEffect(() => {
@@ -264,11 +278,12 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
       if (currentIdx + 1 >= questions.length) setGameState('BOSS_FIGHT');
       else {
         hasTriggeredImpactRef.current = false;
+        setSelectedLane(null);
         gateProgress.set(0);
         setQuestionSecondsLeft(questionDuration);
         setCurrentIdx((idx) => idx + 1);
       }
-    }, 1000);
+    }, impactResult === 'CORRECT' ? 540 : 1050);
     return () => window.clearTimeout(impactTimeoutRef.current!);
   }, [impactResult, isPaused, screen, currentIdx, questions.length, gateProgress, questionDuration]);
 
@@ -279,7 +294,7 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
   }, [countdown, isPaused, screen]);
 
   useEffect(() => {
-    const onVisibility = () => { if (document.hidden && screen === 'GAME' && gameState === 'PLAYING') setIsPaused(true); };
+    const onVisibility = () => { if (document.hidden && screen === 'GAME' && gameState !== 'SUMMARY') setIsPaused(true); };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [screen, gameState]);
@@ -308,28 +323,28 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
 
   // Clicking "前進" turbo-sprints the squad through the gate immediately
   const handleAdvance = useCallback(() => {
-    if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || isAdvancing || impactResult) return;
+    if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || isAdvancing || !selectedLane || impactResult) return;
     soundFX.playAdvanceCharge();
     setIsAdvancing(true);
-  }, [screen, countdown, gameState, isPaused, isAdvancing, impactResult]);
+  }, [screen, countdown, gameState, isPaused, isAdvancing, selectedLane, impactResult]);
 
   // Selecting Left or Right lane
   const handleSelectLane = useCallback(
     (lane: Lane) => {
-      if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || impactResult) return;
+      if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || isAdvancing || impactResult) return;
       soundFX.playLaneSelect();
       setSelectedLane(lane);
       if (autoAdvanceOnSelect) {
         setIsAdvancing(true);
       }
     },
-    [screen, countdown, gameState, isPaused, impactResult, autoAdvanceOnSelect]
+    [screen, countdown, gameState, isPaused, impactResult, isAdvancing, autoAdvanceOnSelect]
   );
 
   // Keyboard navigation (Left/Right arrows to select lane, Space/Enter to turbo-sprint)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || impactResult) return;
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || screen !== 'GAME' || countdown !== null || gameState !== 'PLAYING' || isPaused || impactResult) return;
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         e.preventDefault();
         handleSelectLane('LEFT');
@@ -337,6 +352,7 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
         e.preventDefault();
         handleSelectLane('RIGHT');
       } else if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowUp') {
+        if (e.target instanceof HTMLButtonElement && !e.target.closest('.legion-controls')) return;
         e.preventDefault();
         handleAdvance();
       }
@@ -388,13 +404,13 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
     setImpactResult(null);
   };
 
-  if (screen === 'SETUP') return <SettingsScreen
+  if (screen === 'SETUP') return <><SettingsScreen starting={loading}
     onChooseGame={onChooseGame}
     selectedMode={selectedMode} onSelectMode={setSelectedMode}
     questionDuration={questionDuration} onDurationChange={setQuestionDuration}
     muted={muted} onToggleMute={handleToggleMute}
     autoAdvance={autoAdvanceOnSelect} onToggleAutoAdvance={() => setAutoAdvanceOnSelect(v => !v)}
-    progress={progress} onStart={() => startNewGame(selectedMode)} />;
+    progress={progress} onStart={() => startNewGame(selectedMode)} />{loadError && <p role="alert">場景載入失敗，請再按「開始遊戲」。</p>}</>;
 
   return (
     <div className="game-shell min-h-svh w-full text-white flex flex-col items-center justify-center p-2 sm:p-4 gap-3">
@@ -403,300 +419,46 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
         <span className="text-sm text-slate-300">{currentModeConfig.title} · {questionDuration} 秒／題</span>
         <button onClick={handleToggleMute} aria-label="切換音效" className="p-2 rounded-xl bg-slate-800 cursor-pointer">{muted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
       </nav>
-      {/* CENTER: 1:1 ARCADE BRIDGE GAME VIEWPORT */}
-      <main className="relative w-full max-w-[480px] h-[min(790px,calc(100svh-90px))] min-h-[590px] rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.65)] border-[4px] border-[#1E293B] bg-[#38A7F8] flex flex-col shrink-0">
-        {gameState === 'PLAYING' && (
-          <>
-            {/* Background 2.5D Running Bridge & Approaching Gates Scene */}
-            <BridgeScene
-              paused={isPaused || countdown !== null}
-              question={currentQuestion}
-              troops={troops}
-              selectedLane={selectedLane}
-              gateProgress={gateProgress}
-              isAdvancing={isAdvancing}
-              impactResult={impactResult}
-              weapon={currentWeapon}
-              onSelectLane={handleSelectLane}
-              floatingFeedback={floatingFeedback}
-            />
-
-            {/* TOP OVERLAY: HUD BAR + CRYSTAL-CLEAR QUESTION BANNER */}
-            <div className="relative z-30 pt-2.5 px-2.5 space-y-2 pointer-events-auto">
-              {/* Row 1: Pause Button [||] + Dark Pill Status Bar [🛡️ 22 | ⭐ 508 | 💥 重裝散彈槍] */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPaused(true)}
-                  aria-label="暫停遊戲"
-                  className="w-11 h-11 rounded-2xl bg-gradient-to-b from-[#F9CA38] to-[#ECA81B] border-[3px] border-[#1A2436] shadow-[0_3px_0_#1A2436] active:translate-y-0.5 flex items-center justify-center cursor-pointer shrink-0"
-                >
-                  <div className="flex gap-1">
-                    <span className="w-1.5 h-4 bg-[#3B2A0C] rounded-xs" />
-                    <span className="w-1.5 h-4 bg-[#3B2A0C] rounded-xs" />
-                  </div>
-                </button>
-
-                <div className="flex-1 h-11 bg-[#1A2436] border-[3px] border-white rounded-2xl px-3.5 flex items-center justify-between shadow-md">
-                  {/* Troop Count Badge */}
-                  <div className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                      <path
-                        d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
-                        fill="#EF4444"
-                        stroke="#FDE68A"
-                        strokeWidth="2"
-                      />
-                      <path
-                        d="M12 2v20c4.59-1.15 8-5.86 8-10.91V5l-8-3z"
-                        fill="#B91C1C"
-                      />
-                    </svg>
-                    <span className="font-display font-black text-[#FACC15] text-lg tabular-nums">
-                      {troops}
-                    </span>
-                  </div>
-
-                  {/* Star Score Badge */}
-                  <div className="flex items-center gap-1">
-                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                      <path
-                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                        fill="#FACC15"
-                      />
-                    </svg>
-                    <span className="font-display font-black text-[#FACC15] text-lg tabular-nums">
-                      {score}
-                    </span>
-                  </div>
-
-                  {/* Weapon Tier Name Badge */}
-                  <div className="flex items-center gap-1 min-w-0">
-                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                      <path
-                        d="M12 2l2.2 6.2L20 6l-4.2 5.2L22 14l-6.5 1.2L18 21l-6-4.2L6 21l2.5-5.8L2 14l6.2-2.8L4 6l5.8 2.2L12 2z"
-                        fill="#F97316"
-                      />
-                      <circle cx="12" cy="12" r="3" fill="#FEF08A" />
-                    </svg>
-                    <span className="font-black text-white text-sm tracking-tight truncate">
-                      {currentWeapon.name}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: UPGRADED HIGH-CLARITY QUESTION BANNER AT THE TOP */}
-              <div className="w-full bg-[#131F33] border-[3.5px] border-white rounded-[22px] px-3.5 pt-2 pb-3 shadow-2xl">
-                {/* Top Metadata Row: question number, mode title, and remaining seconds */}
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-display font-black text-[#93B4E8] text-sm tracking-wide tabular-nums">
-                      Q {currentQuestion.index}/{questions.length}
-                    </span>
-                    <span className="text-xs font-bold text-amber-300">
-                      · {currentModeConfig.title}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-slate-300">
-                      倒數
-                    </span>
-                    <span
-                      className={`font-display font-black text-lg tabular-nums ${
-                        questionSecondsLeft <= 2.2
-                          ? 'text-rose-400 animate-pulse'
-                          : 'text-[#4ADE80]'
-                      }`}
-                    >
-                      {questionSecondsLeft.toFixed(1)}秒
-                    </span>
-                  </div>
-                </div>
-
-                {/* Large number blocks keep arithmetic questions easy to scan. */}
-                {currentQuestion.numA !== undefined &&
-                currentQuestion.numB !== undefined ? (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-0.5">
-                      {/* First Addend Box */}
-                      <div className="min-w-[64px] px-3 py-1 rounded-xl bg-[#1E3252] border-2 border-sky-300/80 shadow-inner flex items-center justify-center">
-                        <span className="font-display font-black text-white text-3xl sm:text-4xl tabular-nums tracking-tight">
-                          {currentQuestion.numA}
-                        </span>
-                      </div>
-
-                      {/* Operation Sign */}
-                      <span className="font-display font-black text-amber-400 text-3xl sm:text-4xl drop-shadow">
-                        {currentQuestion.operator ?? '+'}
-                      </span>
-
-                      {/* Second Addend Box */}
-                      <div className="min-w-[64px] px-3 py-1 rounded-xl bg-[#1E3252] border-2 border-sky-300/80 shadow-inner flex items-center justify-center">
-                        <span className="font-display font-black text-white text-3xl sm:text-4xl tabular-nums tracking-tight">
-                          {currentQuestion.numB}
-                        </span>
-                      </div>
-
-                      {/* Equals Sign */}
-                      <span className="font-display font-black text-white text-2xl sm:text-3xl">
-                        =
-                      </span>
-
-                      {/* Question Mark Target Box */}
-                      <div className="min-w-[54px] px-2.5 py-1 rounded-xl bg-amber-400 border-2 border-white shadow flex items-center justify-center">
-                        <span className="font-display font-black text-slate-950 text-3xl sm:text-4xl">
-                          ?
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Classic Number Sense Prompt ("8 的前一個數是？") */
-                  <div className="text-center py-1.5">
-                    <h2 className="font-display font-black text-white text-2xl sm:text-[28px] tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-                      {currentQuestion.prompt}
-                    </h2>
-                  </div>
-                )}
-
-                {/* Per-Question Running Time Progress Bar */}
-                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2 border border-white/20">
-                  <div
-                    style={{ width: `${timeProgressPercent}%` }}
-                    className={`h-full transition-none ${
-                      questionSecondsLeft <= 2.2
-                        ? 'bg-rose-500'
-                        : 'bg-gradient-to-r from-emerald-400 to-sky-400'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5" aria-label="本關任務進度">
-                {missionProgress.map((mission) => (
-                  <div
-                    key={mission.id}
-                    title={`${mission.description} · ${mission.complete ? '已完成' : `${mission.value}/${mission.target}`}`}
-                    className={`min-w-0 rounded-lg border px-1.5 py-1 text-center ${mission.complete ? 'border-emerald-300/70 bg-emerald-950/85 text-emerald-200' : 'border-white/20 bg-slate-950/75 text-slate-200'}`}
-                  >
-                    <div className="truncate text-[10px] font-black">{mission.complete ? '✓ ' : ''}{mission.title}</div>
-                    <div className="text-[9px] tabular-nums opacity-80">
-                      {mission.id === 'boss' && !mission.complete ? '待完成' : `${mission.value}/${mission.target}`}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* BOTTOM OVERLAY: LANE SELECTION BUTTONS & YELLOW "前進" BUTTON */}
-            <div className="relative z-30 mt-auto pb-3.5 px-2.5 flex flex-col items-center pointer-events-auto">
-              {/* "選擇跑道" Outlined Label */}
-              <div className="mb-2 text-center">
-                <span className="stroke-arcade-text font-black text-xl tracking-wider">
-                  選擇跑道
-                </span>
-              </div>
-
-              {/* Two Large Blue Lane Choice Buttons */}
-              <div className="w-full grid grid-cols-2 gap-2.5 mb-3">
-                {/* Left Option Button */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectLane('LEFT')}
-                  className={`relative h-[60px] rounded-2xl bg-[#1A73F0] border-[3.5px] transition-all flex items-center justify-center cursor-pointer active:translate-y-0.5 ${
-                    selectedLane === 'LEFT'
-                      ? 'border-amber-300 ring-2 ring-amber-300/60 shadow-[0_5px_0_#0D47A1,0_0_15px_rgba(255,255,255,0.5)]'
-                      : 'border-white/90 shadow-[0_4px_0_#0F4C9C] opacity-95 hover:opacity-100'
-                  }`}
-                >
-                  <span className="font-display font-black text-white text-2xl sm:text-3xl tabular-nums drop-shadow-[0_2px_1px_rgba(0,0,0,0.3)]">
-                    {currentQuestion.leftOption}
-                  </span>
-
-                  {selectedLane === 'LEFT' && (
-                    <svg
-                      className="w-6 h-6 ml-2.5 animate-hand-point drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]"
-                      viewBox="0 0 24 24"
-                      fill="white"
-                      stroke="#1E293B"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
-                      <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
-                      <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
-                      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-                    </svg>
-                  )}
-                </button>
-
-                {/* Right Option Button */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectLane('RIGHT')}
-                  className={`relative h-[60px] rounded-2xl bg-[#1A73F0] border-[3.5px] transition-all flex items-center justify-center cursor-pointer active:translate-y-0.5 ${
-                    selectedLane === 'RIGHT'
-                      ? 'border-amber-300 ring-2 ring-amber-300/60 shadow-[0_5px_0_#0D47A1,0_0_15px_rgba(255,255,255,0.5)]'
-                      : 'border-white/90 shadow-[0_4px_0_#0F4C9C] opacity-95 hover:opacity-100'
-                  }`}
-                >
-                  <span className="font-display font-black text-white text-2xl sm:text-3xl tabular-nums drop-shadow-[0_2px_1px_rgba(0,0,0,0.3)]">
-                    {currentQuestion.rightOption}
-                  </span>
-
-                  {selectedLane === 'RIGHT' && (
-                    <svg
-                      className="w-6 h-6 ml-2.5 animate-hand-point drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]"
-                      viewBox="0 0 24 24"
-                      fill="white"
-                      stroke="#1E293B"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
-                      <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
-                      <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
-                      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-
-              {/* Golden-Yellow "前進" (Advance / Turbo Charge) Button */}
-              <button
-                type="button"
-                onClick={handleAdvance}
-                disabled={isAdvancing}
-                className="w-[56%] h-[54px] rounded-full bg-gradient-to-b from-[#FAD046] via-[#F5BD29] to-[#EAA918] border-[3.5px] border-[#1B2538] shadow-[0_5px_0_#1B2538] active:translate-y-1 active:shadow-[0_2px_0_#1B2538] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <span className="font-black text-[#3F2B08] text-2xl tracking-widest">
-                  前進
-                </span>
-                <FastForward className="w-5 h-5 text-[#3F2B08] fill-current" />
-              </button>
-            </div>
-          </>
-        )}
-
-        {missionToast && (
-          <div role="status" aria-live="polite" className="mission-toast absolute left-1/2 top-[43%] z-50 w-[88%] -translate-x-1/2 rounded-2xl border-2 border-amber-200 bg-slate-950/95 px-4 py-3 text-center shadow-2xl">
-            <div className="text-xs font-bold tracking-widest text-amber-200">任務完成</div>
-            <div className="mt-1 text-lg font-black text-white">{missionToast.replace('任務完成：', '').replace(/！$/, '')}</div>
+      <main className="legion-board">
+        {gameState !== 'SUMMARY' && <>
+          <header className="legion-hud">
+            <span>士兵 <b>{troops}</b></span><span>得分 <b>{score}</b></span>
+            <span className="legion-weapon">{currentWeapon.name}</span>
+            <button onClick={() => setIsPaused(true)} aria-label="暫停遊戲">Ⅱ</button>
+          </header>
+          {gameState === 'PLAYING' ? <section className="legion-question" aria-label="數學題目">
+            <div className="legion-meta"><span>第 {currentQuestion.index}／{questions.length} 題 · {currentModeConfig.shortTitle}</span><span>{questionSecondsLeft.toFixed(1)} 秒</span></div>
+            <h2 aria-live="polite">{currentQuestion.prompt}</h2>
+            <progress aria-label="本題剩餘時間" max={100} value={timeProgressPercent} />
+          </section> : <BossBattleView modeConfig={currentModeConfig} troops={troops} weapon={currentWeapon}
+            hp={bossHp} armed={records.some(r => r.isCorrect)} paused={isPaused} onHp={setBossHp} onFinishBattle={handleBossBattleComplete} />}
+          <div className="legion-stage">
+            <BridgeScene paused={isPaused || countdown !== null} mode={selectedMode} question={currentQuestion}
+              troops={troops} selectedLane={selectedLane} gateProgress={gateProgress} isAdvancing={isAdvancing}
+              impact={!!impactResult} weapon={currentWeapon} defense={defense} boss={gameState === 'BOSS_FIGHT'}
+              bossHp={bossHp} armed={records.some(r => r.isCorrect)} onSelectLane={handleSelectLane} />
+            {floatingFeedback && <p className={'legion-feedback ' + (floatingFeedback.isPositive ? 'good' : 'review')} role="status">
+              {floatingFeedback.text} · {floatingFeedback.subtext}
+            </p>}
+            {missionToast && <p className="legion-mission-toast" role="status">{missionToast}</p>}
           </div>
-        )}
-
-        {/* END OF STAGE BOSS BATTLE VIEW */}
-        {gameState === 'BOSS_FIGHT' && (
-          <BossBattleView
-            modeConfig={currentModeConfig}
-            troops={troops}
-            weapon={currentWeapon}
-            onFinishBattle={handleBossBattleComplete}
-          />
-        )}
+          {gameState === 'PLAYING' ? <div className="legion-controls">
+            <div className="legion-missions" aria-label="本關任務進度">{missionProgress.map(m => <span key={m.id} title={m.description}>
+              {m.complete ? '✓ ' : ''}{m.title} {m.id === 'boss' && !m.complete ? '待完成' : `${m.value}/${m.target}`}
+            </span>)}</div>
+            <div className="legion-lanes">{(['LEFT','RIGHT'] as const).map(lane => {
+              const label = lane === 'LEFT' ? '左' : '右';
+              const value = lane === 'LEFT' ? currentQuestion.leftOption : currentQuestion.rightOption;
+              return <button key={lane} type="button" aria-label={`${label}邊跑道 ${value}`} aria-pressed={selectedLane === lane}
+                disabled={isPaused || countdown !== null || isAdvancing || !!impactResult} onClick={() => handleSelectLane(lane)}>
+                <small>{label}</small> {value}
+              </button>;
+            })}</div>
+            <button className="legion-advance" type="button" disabled={!selectedLane || isAdvancing || !!impactResult || isPaused || countdown !== null} onClick={handleAdvance}>
+              前進 <FastForward size={17} />
+            </button>
+          </div> : <div className="legion-result-line">衝線兵力 {troops} · {currentWeapon.name} · {records.some(r => r.isCorrect) ? '軍團合力迎戰' : '能量不足'}</div>}
+        </>}
 
         {/* SUMMARY & QUESTION REVIEW VIEW */}
         {gameState === 'SUMMARY' && (
