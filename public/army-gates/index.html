@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>數學大軍闖關</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;height:100%;overflow:hidden;background:#13284a;font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;touch-action:none}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .hud{position:fixed;pointer-events:none;z-index:5}
+  #logo{top:12px;left:12px;font-weight:900;font-size:26px;line-height:1;color:#ffd23f;
+    text-shadow:0 3px 0 #b5520b,0 0 2px #000,2px 2px 0 #7a2e00;letter-spacing:1px}
+  #logo small{display:block;font-size:15px;color:#fff;text-shadow:0 2px 0 #1c4f9c;margin-top:4px}
+  #lvl{top:66px;left:12px;background:#2f8cf0;color:#fff;font-weight:700;font-size:14px;padding:4px 12px;border-radius:10px;box-shadow:0 3px 0 #1a5bb0}
+  #pauseBtn{position:fixed;top:12px;right:12px;z-index:6;width:46px;height:46px;border-radius:50%;border:none;
+    background:rgba(255,255,255,.9);font-size:20px;font-weight:900;color:#1c4f9c;box-shadow:0 3px 0 #9fb4d4;display:none}
+  #hint{left:50%;bottom:14%;transform:translateX(-50%);color:#fff;font-weight:900;font-size:22px;
+    text-shadow:0 2px 4px #000;white-space:nowrap;animation:bob 1s ease-in-out infinite alternate;display:none}
+  @keyframes bob{from{transform:translate(-50%,0)}to{transform:translate(-50%,-8px)}}
+  .overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
+    background:rgba(10,24,48,.72);padding:16px}
+  .panel{width:min(420px,100%);max-height:100%;overflow:auto;background:#fff8e8;border-radius:22px;padding:20px 20px 22px;
+    box-shadow:0 8px 0 #c99a4a,0 12px 30px rgba(0,0,0,.4);text-align:center}
+  .panel h1{margin:0 0 4px;font-size:32px;font-weight:900;color:#e2591b;text-shadow:0 2px 0 #ffd23f}
+  .panel p{margin:4px 0 12px;color:#5a4630;font-size:15px}
+  .row{margin:12px 0}
+  .row .lab{font-weight:900;color:#1c4f9c;font-size:16px;margin-bottom:6px;text-align:left}
+  .opts{display:flex;gap:8px;flex-wrap:wrap}
+  .opt{flex:1 1 0;min-width:70px;padding:10px 4px;border-radius:12px;border:3px solid #9fb4d4;background:#fff;font-size:17px;font-weight:700;color:#1c4f9c;font-family:inherit}
+  .opt.on{background:#2f8cf0;border-color:#1a5bb0;color:#fff}
+  textarea{width:100%;height:110px;border-radius:12px;border:3px solid #9fb4d4;padding:8px;font-size:16px;font-family:inherit;user-select:text;-webkit-user-select:text}
+  details{text-align:left;margin-top:10px}
+  summary{font-weight:900;color:#1c4f9c;font-size:16px;cursor:pointer}
+  .note{font-size:13px;color:#7a6650;margin:6px 0 0;text-align:left}
+  .big{margin-top:16px;width:100%;padding:14px;border:none;border-radius:16px;background:#ff9a1f;color:#fff;font-size:24px;font-weight:900;
+    box-shadow:0 6px 0 #c4600a;font-family:inherit}
+  .big:active{transform:translateY(4px);box-shadow:0 2px 0 #c4600a}
+  .big.blue{background:#2f8cf0;box-shadow:0 6px 0 #1a5bb0}
+  #log{text-align:left;background:#fff;border-radius:12px;padding:8px 12px;margin-top:10px;font-size:17px;color:#333;max-height:180px;overflow:auto;border:2px solid #e8d7b4}
+  #log div{padding:2px 0;border-bottom:1px dashed #eee}
+  .stat{display:flex;justify-content:space-around;margin:10px 0}
+  .stat b{display:block;font-size:28px;color:#e2591b}
+  .stat span{font-size:14px;color:#5a4630}
+</style>
+<style>
+  #feedback{left:50%;top:16%;transform:translateX(-50%);font-weight:900;font-size:26px;white-space:nowrap;
+    padding:6px 18px;border-radius:14px;opacity:0;transition:opacity .2s}
+  #feedback.good{background:#2fb24c;color:#fff;box-shadow:0 4px 0 #1b7a30}
+  #feedback.bad{background:#ff8a1f;color:#fff;box-shadow:0 4px 0 #c4600a}
+  #score{top:66px;right:12px;background:#fff;color:#1c4f9c;font-weight:900;font-size:15px;padding:4px 12px;border-radius:10px;box-shadow:0 3px 0 #9fb4d4}
+  #log .ok{color:#1b7a30} #log .no{color:#c4600a}
+  .lvl-desc{font-size:13px;font-weight:500;display:block;margin-top:2px}
+</style>
+<style>
+  .hub-link{display:block;width:fit-content;padding:6px 2px;color:#24557a;font-size:14px;font-weight:700;text-decoration:none}
+  #lvl{padding-left:40px;background-color:#173c61;background-image:url(art/bow.webp);background-size:30px 30px;background-position:5px center;background-repeat:no-repeat;min-height:31px}
+  #lvl.crossbow{background-image:url(art/crossbow.webp)}
+  #hint{font-size:clamp(13px,3.5vw,22px)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="logo">數學大軍<small id="lvlName">第一關</small></div>
+<div class="hud" id="lvl">武器：木弓</div>
+<div class="hud" id="score">正確 0 / 0</div>
+<button id="pauseBtn">❚❚</button>
+<div class="hud" id="hint">◀ 拖動軍隊到左／右，或直接點選門 ▶</div>
+<div class="hud" id="feedback"></div>
+
+<div class="overlay" id="menu">
+  <div class="panel">
+    <a class="hub-link" href="../">← 返回遊戲選擇</a>
+    <h1>數學大軍闖關</h1>
+    <p>左右兩邊會出現「＋」「－」「×」門。<br>看看自己有多少士兵，選出令軍隊最多的一道門！<br>沒有選的門很快便會消失。<br>中路射爆炸藥桶可炸走敵兵，射爆寶箱有援軍。<br>選錯門，首領會回復體力！</p>
+    <div class="row"><div class="lab">關卡</div>
+      <div class="opts" data-k="level">
+        <button class="opt on" data-v="1">第一關<span class="lvl-desc">加減混合</span></button>
+        <button class="opt" data-v="2">第二關<span class="lvl-desc">加減乘混合</span></button>
+      </div></div>
+    <div class="row"><div class="lab">門上的數字</div>
+      <div class="opts" data-k="range">
+        <button class="opt" data-v="10">10以內</button>
+        <button class="opt on" data-v="20">20以內</button>
+        <button class="opt" data-v="50">50以內</button>
+      </div></div>
+    <div class="row"><div class="lab">難度</div>
+      <div class="opts" data-k="speed">
+        <button class="opt on" data-v="easy">容易<span class="lvl-desc">敵兵少・門停3.5秒</span></button>
+        <button class="opt" data-v="mid">普通<span class="lvl-desc">門停2.5秒</span></button>
+        <button class="opt" data-v="hard">困難<span class="lvl-desc">敵兵多・門停2秒</span></button>
+      </div></div>
+    <button class="big" id="startBtn">開始遊戲</button>
+  </div>
+</div>
+
+<div class="overlay" id="pauseMenu" style="display:none">
+  <div class="panel">
+    <h1>暫停</h1>
+    <button class="big blue" id="resumeBtn">繼續</button>
+    <button class="big" id="quitBtn">返回主頁</button>
+  </div>
+</div>
+
+<div class="overlay" id="endMenu" style="display:none">
+  <div class="panel">
+    <h1 id="endTitle">勝利！</h1>
+    <div class="stat">
+      <div><b id="stMax">0</b><span>最多士兵</span></div>
+      <div><b id="stAcc">0</b><span>正確選擇</span></div>
+      <div><b id="stTime">0</b><span>用時（秒）</span></div>
+    </div>
+    <div class="lab" style="text-align:left;font-weight:900;color:#1c4f9c">今局的選擇</div>
+    <div id="log"></div>
+    <button class="big blue" id="againBtn">再玩一次</button>
+    <button class="big" id="homeBtn">返回主頁</button>
+  </div>
+</div>
+
+<script src="./vendor/three-r128.min.js"></script>
+<script src="./art.js"></script>
+<script>
+(() => {
+'use strict';
+// ---------------- 設定 ----------------
+const cfg = { level:'1', range:20, speed:'easy' };
+try { const s = JSON.parse(localStorage.getItem('armyMathCfg2')||'null'); if (s) Object.assign(cfg, s); } catch(e){}
+if (!['easy','mid','hard'].includes(cfg.speed)) cfg.speed='easy';
+document.querySelectorAll('.opts').forEach(g => {
+  const k = g.dataset.k;
+  g.querySelectorAll('.opt').forEach(b => {
+    b.classList.toggle('on', String(cfg[k]) === b.dataset.v);
+    b.onclick = () => { g.querySelectorAll('.opt').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+      cfg[k] = k==='range' ? +b.dataset.v : b.dataset.v; };
+  });
+});
+const SPEEDS = {
+  easy:{ life:3.5, horde:35,  refill:1.5, hordeSpeed:0.6, enemySpeed:1.1, bossSpeed:0.15, bossHP:2500, heal:40 },
+  mid: { life:2.5, horde:70,  refill:4,   hordeSpeed:0.8, enemySpeed:1.4, bossSpeed:0.16, bossHP:3200, heal:80 },
+  hard:{ life:2.0, horde:120, refill:9,   hordeSpeed:1.0, enemySpeed:1.8, bossSpeed:0.17, bossHP:4000, heal:120 }
+};
+const R = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+// ---------------- 音效 ----------------
+let actx=null;
+function beep(f,d=0.08,type='square',vol=0.05){
+  if(!actx) return;
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type=type; o.frequency.value=f; g.gain.value=vol;
+  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+d);
+  o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+d);
+}
+
+// ---------------- Three.js 場景 ----------------
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9ec7c7);
+scene.fog = new THREE.Fog(0x9ec7c7, 54, 118);
+const camera = new THREE.PerspectiveCamera(60, 1, 0.5, 300);
+camera.position.set(0, 21, 17);
+camera.lookAt(0, 0, -9);
+function resize(){
+  const w=innerWidth, h=innerHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h;
+  const f = 2*Math.atan(0.335/camera.aspect)*180/Math.PI;
+  camera.fov = Math.max(42, Math.min(78, f));
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6a5a48, 0.62));
+const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-10, 30, 15); scene.add(sun);
+
+const L = { X:-6.4, C:0, RX:6.4, SIDE_W:4.4, CEN_W:6.8, EXIT:-4, SQUAD_Z:4.2 };
+const lam = c => new THREE.MeshLambertMaterial({color:c});
+const water = armyArt.landscape(scene,L);
+
+// ---------------- 文字精靈 ----------------
+function drawLabel(cv, text, o){
+  const size=o.size||96, color=o.color||'#fff', stroke=o.stroke||'#1b1b1b';
+  const cx=cv.getContext('2d');
+  const font=`900 ${size}px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif`;
+  cx.clearRect(0,0,cv.width,cv.height);
+  cx.font=font; cx.textAlign='center'; cx.textBaseline='middle';
+  cx.lineJoin='round'; cx.lineWidth=size*0.16; cx.strokeStyle=stroke;
+  cx.strokeText(text, cv.width/2, cv.height/2); cx.fillStyle=color; cx.fillText(text, cv.width/2, cv.height/2);
+}
+function textSprite(text, o={}){
+  const size=o.size||96;
+  const cv=document.createElement('canvas'), cx=cv.getContext('2d');
+  cx.font=`900 ${size}px 'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif`;
+  const minW = o.minChars ? cx.measureText('8'.repeat(o.minChars)).width : 0;
+  const w=Math.ceil(Math.max(cx.measureText(text).width, minW))+size*0.5;
+  cv.width=w; cv.height=Math.ceil(size*1.4);
+  drawLabel(cv, text, o);
+  const tex=new THREE.CanvasTexture(cv); tex.anisotropy=4;
+  const mat=new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false});
+  const sp=new THREE.Sprite(mat); const h=o.h||1.2; sp.scale.set(h*w/cv.height, h, 1);
+  sp.renderOrder=10; sp.userData={cv, o, text}; return sp;
+}
+// 數字標籤：只標記需要更新，每格畫面最多重畫一次（避免每箭重建貼圖）
+const dirtyLabels=new Set();
+function setSpriteText(sp, text){ if (sp.userData.text===text) return; sp.userData.text=text; dirtyLabels.add(sp); }
+function flushLabels(){ dirtyLabels.forEach(sp=>{ drawLabel(sp.userData.cv, sp.userData.text, sp.userData.o); sp.material.map.needsUpdate=true; }); dirtyLabels.clear(); }
+
+// ---------------- 士兵（InstancedMesh） ----------------
+const dummy=new THREE.Object3D();
+const blueArmy=armyArt.army(scene,'archer',160,1.02,1.54);
+const redArmy=armyArt.army(scene,'raider',260,1.06,1.49);
+
+// ---------------- 箭矢 ----------------
+const MAXA=420;
+const arrowMesh=new THREE.InstancedMesh(new THREE.ConeGeometry(0.075,1.1,5).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0x9efffa}), MAXA);
+arrowMesh.frustumCulled=false; scene.add(arrowMesh);
+const arrows=[]; for(let i=0;i<MAXA;i++) arrows.push({on:false,x:0,y:0,z:0});
+
+// ---------------- 粒子（星星，不見血） ----------------
+const MAXP=400;
+const pMesh=new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshBasicMaterial({color:0xffffff}), MAXP);
+pMesh.frustumCulled=false; scene.add(pMesh);
+const parts=[]; for(let i=0;i<MAXP;i++){ parts.push({on:false}); pMesh.setColorAt(i,new THREE.Color(1,1,1)); }
+let pIdx=0;
+function burst(x,y,z,color,n=10,spd=4){
+  const c=new THREE.Color(color);
+  for(let k=0;k<n;k++){ const p=parts[pIdx]; pMesh.setColorAt(pIdx,c); pIdx=(pIdx+1)%MAXP;
+    p.on=true; p.x=x; p.y=y; p.z=z; p.vx=(Math.random()-.5)*spd; p.vy=Math.random()*spd+1; p.vz=(Math.random()-.5)*spd; p.life=0.6+Math.random()*0.4; }
+  pMesh.instanceColor.needsUpdate=true;
+}
+
+// ---------------- 浮動文字 ----------------
+const floats=[];
+function floatText(text,x,y,z,o={}){ const sp=textSprite(text,o); sp.position.set(x,y,z); scene.add(sp); floats.push({sp,life:o.life||1.3,vy:o.vy||2.2}); }
+
+// ---------------- 巨人、首領、武器寶箱 ----------------
+function makeGiant(){
+  const g=new THREE.Group(); g.add(armyArt.sprite('giant',5.0,5.2)); return g;
+}
+function makeBoss(){
+  const g=new THREE.Group(); g.add(armyArt.sprite('warlord',5.8,6.4)); return g;
+}
+function weaponCanvasSprite(level){
+  return armyArt.sprite(level%2===0 ? 'bow' : 'crossbow',3.4,3.4);
+}
+
+// ---------------- 選擇門 ----------------
+// 門的數值：{op:'+'|'−'|'×', n}
+const apply = (army, g) => g.op==='+' ? army+g.n : g.op==='−' ? army-g.n : army*g.n;
+const gText = g => g.label || (g.op + g.n);
+function genGate(other){
+  const M=cfg.range, lv=cfg.level;
+  const army = G ? G.army : 0;
+  const plus = () => ({op:'+', n:R(1,M)});
+  const minus= () => ({op:'−', n:R(1,M)});
+  // 乘法：士兵少（50或以下）時才出「×2／×3」；士兵多時改為「+3×4」（加 3 組，每組 4 人），乘數保持在乘數表範圍內
+  const fmax = M<=10 ? 5 : 9;
+  const timesArmy = () => ({op:'×', n: (army*3>150 || Math.random()<0.65) ? 2 : 3});
+  const groupGate = (sign) => { let a=R(2,fmax), b=R(2,fmax); if (M<=20) while(a*b>M*2){ a=R(2,fmax); b=R(2,fmax); }
+    return {op:sign, n:a*b, label:`${sign}${a}×${b}`}; };
+  let g;
+  if (lv==='2'){
+    const r=Math.random();
+    const mulOK = army <= 50;
+    if (other && (other.op==='×' || other.label)) g = r<0.55 ? plus() : minus();
+    else if (r<0.45) g = mulOK && Math.random()<0.6 ? timesArmy() : groupGate(Math.random()<0.7?'+':'−');
+    else g = r<0.75 ? plus() : minus();
+  } else {
+    if (other && other.op==='+') g = Math.random()<0.55 ? minus() : plus();
+    else if (other && other.op==='−') g = Math.random()<0.75 ? plus() : minus();
+    else g = Math.random()<0.6 ? plus() : minus();
+  }
+  if (other && apply(army,other)===apply(army,g) && !g.label) g.n = g.op==='×' ? (g.n===2?3:2) : (g.n%M)+1;
+  return g;
+}
+const GATE_COL = { '+':[0x2f8cf0,0x6db8ff,'#103f86'], 'g':[0x8a4fe0,0xc4a0ff,'#3d1680'], '−':[0xe0413a,0xff8a80,'#7a0f0a'], '×':[0x8a4fe0,0xc4a0ff,'#3d1680'] };
+function makeGateMesh(g){
+  const [c1,c2,st]=GATE_COL[g.label ? 'g' : g.op];
+  const grp=new THREE.Group();
+  const post=(x)=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(0.35,3.2,0.35), lam(0x6b6f78)); p.position.set(x,1.6,0); grp.add(p); };
+  post(-1.95); post(1.95); armyArt.gateTrim(grp);
+  const panel=new THREE.Mesh(new THREE.BoxGeometry(3.6,2.2,0.25), new THREE.MeshLambertMaterial({color:c1, transparent:true, opacity:0.85}));
+  panel.position.y=1.9; grp.add(panel);
+  const rim=new THREE.Mesh(new THREE.BoxGeometry(3.9,0.3,0.4), lam(c2)); rim.position.y=3.1; grp.add(rim);
+  const lab=textSprite(gText(g),{size:120,h:g.label?1.6:1.9,stroke:st}); lab.position.set(0,2.1,0.4); grp.add(lab);
+  // 倒數條
+  const barBg=new THREE.Mesh(new THREE.BoxGeometry(3.4,0.22,0.1), new THREE.MeshBasicMaterial({color:0x222222})); barBg.position.set(0,0.55,0.3); grp.add(barBg);
+  const bar=new THREE.Mesh(new THREE.BoxGeometry(3.4,0.22,0.12), new THREE.MeshBasicMaterial({color:0xffd23f})); bar.position.set(0,0.55,0.32); grp.add(bar);
+  return {grp,panel,bar,lab};
+}
+
+// ---------------- 遊戲狀態 ----------------
+const WEAPONS=['木弓','金弓','十字弩','黃金十字弩','神射弩'];
+let G=null, running=false, paused=false;
+const SIDES={L:{x:-6.4}, R:{x:6.4}};
+const GATE_Z = -4.2;
+
+function clearGate(side){ const s=G.gates[side]; if(s.mesh){ scene.remove(s.mesh.grp); s.mesh=null; } s.g=null; }
+function newGame(){
+  if (G){ clearGate('L'); clearGate('R'); G.props.forEach(p=>scene.remove(p.grp)); scene.remove(G.boss.grp); scene.remove(G.armyLabel);
+    floats.forEach(f=>scene.remove(f.sp)); floats.length=0; }
+  const S=SPEEDS[cfg.speed];
+  const bossHP = S.bossHP;
+  const startArmy = cfg.range*2;
+  G={ S, t:0, army:startArmy, maxArmy:startArmy, sx:0, tx:0, level:0, volley:0, spawn:0, log:[], good:0, total:0,
+      enemies:[], props:[], propT:6, slots:[], over:false, zone:'C',
+      gates:{ L:{g:null,mesh:null,age:0,wait:0.8, born:0}, R:{g:null,mesh:null,age:0,wait:0.3, born:0} } };
+  const bg=makeBoss(); bg.position.set(0,0,-28); scene.add(bg);
+  const bl=textSprite(String(bossHP),{size:96,h:1.8,minChars:4}); bl.position.set(0,7.2,0); bg.add(bl);
+  G.boss={grp:bg,hp:bossHP,max:bossHP,label:bl,z:-28,flash:0};
+  G.armyLabel=textSprite(String(startArmy),{size:110,h:1.6,minChars:4}); scene.add(G.armyLabel);
+  for(let i=0;i<160;i++) G.slots.push({x:0,z:L.SQUAD_Z});
+  for(let i=0;i<S.horde;i++) G.enemies.push({x:-2.8+(i%6)*1.12+(Math.random()-.5)*0.3, z:-25.4+Math.floor(i/6)*0.6, ph:Math.random()*6, hp:1});
+  document.getElementById('lvlName').textContent = cfg.level==='2' ? '第二關・加減乘' : '第一關・加減';
+  updateHud();
+}
+function updateHud(){
+  document.getElementById('lvl').textContent='武器：'+WEAPONS[G.level];
+  document.getElementById('lvl').classList.toggle('crossbow',G.level>=2);
+  document.getElementById('score').textContent=`正確 ${G.good} / ${G.total}`;
+}
+function spawnGate(side){
+  const other = G.gates[side==='L'?'R':'L'].g;
+  const g=genGate(other);
+  const m=makeGateMesh(g);
+  m.grp.position.set(SIDES[side].x, 0.6, GATE_Z-14); scene.add(m.grp);
+  Object.assign(G.gates[side], {g, mesh:m, age:0, z:GATE_Z-14, born:G.t});
+}
+let fbTimer=null;
+function feedback(text, good){
+  const el=document.getElementById('feedback'); el.textContent=text; el.className='hud '+(good?'good':'bad'); el.style.opacity=1;
+  clearTimeout(fbTimer); fbTimer=setTimeout(()=>{ el.style.opacity=0; }, 1300);
+}
+function chooseGate(side){
+  const s=G.gates[side]; if(!s.g || s.z < GATE_Z-3) return;   // 門未到位不可選
+  const o=G.gates[side==='L'?'R':'L'];
+  const before=G.army, after=Math.max(0,Math.min(999,apply(before,s.g)));
+  let best=true, better=null;
+  if (o.g && o.z > GATE_Z-3){ const alt=apply(before,o.g); if (alt>apply(before,s.g)){ best=false; better=o.g; } }
+  else if (apply(before,s.g) < before){ best=false; }
+  G.total++; if(best) G.good++;
+  G.army=after; G.maxArmy=Math.max(G.maxArmy,G.army);
+  const opTxt = s.g.label ? `${s.g.op} (${s.g.label.slice(1)})` : `${s.g.op} ${s.g.n}`;
+  const line=`${before} ${opTxt} = ${apply(before,s.g)}`;
+  G.log.push({line, best, better: better ? gText(better) : null});
+  const wx=SIDES[side].x;
+  floatText(`${before}${opTxt.replace(/ /g,'')}=${after}`, Math.max(-4.2,Math.min(4.2,wx)), 4.4, GATE_Z, {size:110,h:1.5,color:'#fff',stroke:GATE_COL[s.g.label?'g':s.g.op][2],life:1.1,vy:2.2});
+  burst(wx,2,GATE_Z, s.g.op==='−'?0xff8a80:0xffd23f, 22, 6);
+  if (best){ feedback(better===null && s.g.op==='−' ? '✓' : '✓ 好選擇！', true); beep(660,0.1); setTimeout(()=>beep(880,0.12),90);
+    if (G.good%5===0 && G.level<4){ G.level++; floatText('攻擊力 +20%',Math.max(-4,Math.min(4,G.sx)),3.4,L.SQUAD_Z,{size:96,h:1.4,color:'#ffd23f',stroke:'#8a3b00',life:1.6}); }
+  } else { feedback(better ? `另一邊 ${gText(better)} 會更多` : '士兵減少了！', false); beep(200,0.2,'sawtooth',0.04);
+    G.boss.hp = Math.min(G.boss.max, G.boss.hp + G.S.heal); setSpriteText(G.boss.label,String(Math.ceil(G.boss.hp)));
+    floatText('首領回復 +'+G.S.heal,0,7.5,G.boss.z,{size:96,h:1.3,color:'#ff6b6b',stroke:'#4a0000',life:1.4}); }
+  clearGate(side); s.wait=0.5;
+  updateHud();
+}
+function expireGate(side){
+  const s=G.gates[side]; burst(SIDES[side].x,2,s.z,0xaaaaaa,8,3); clearGate(side); s.wait=0.35;
+}
+
+function enemyHP(){ return 1; }
+function spawnProp(type){
+  const grp=new THREE.Group(); let hp;
+  if (type==='barrel'){
+    grp.add(armyArt.sprite('barrel',1.85,2.15));
+    hp = 40 + Math.round(G.army*0.5);
+  } else {
+    grp.add(armyArt.sprite('chest',2.0,1.6));
+    hp = 60 + Math.round(G.army*0.7);
+  }
+  const x=(Math.random()-.5)*3.6, z=G.boss.z+3.5;
+  const label=textSprite(String(hp),{size:96,h:1.1,minChars:3}); label.position.set(0,type==='barrel'?2.9:2.0,0); grp.add(label);
+  grp.position.set(x,0,z); scene.add(grp);
+  G.props.push({type,grp,x,z,hp,label,flash:0});
+}
+function breakProp(p){
+  scene.remove(p.grp); G.props.splice(G.props.indexOf(p),1);
+  if (p.type==='barrel'){
+    let n=0; for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i]; if (Math.hypot(e.x-p.x,e.z-p.z)<4.2){ G.enemies.splice(i,1); n++; } }
+    burst(p.x,1.5,p.z,0xff7a1a,50,10); burst(p.x,1.5,p.z,0xffe066,30,7);
+    G.boss.hp -= 40; setSpriteText(G.boss.label,String(Math.max(0,Math.ceil(G.boss.hp))));
+    floatText(`轟！ 炸走 ${n} 個敵兵`,0,4,p.z,{size:96,h:1.4,color:'#ffb020',stroke:'#5a1a00',life:1.6});
+    beep(90,0.35,'sawtooth',0.08);
+  } else {
+    const bonus = Math.round(cfg.range/2);
+    G.army=Math.min(999,G.army+bonus); G.maxArmy=Math.max(G.maxArmy,G.army);
+    burst(p.x,1.5,p.z,0xffd23f,40,8);
+    floatText(`寶箱！援軍 +${bonus}`,0,4,p.z,{size:96,h:1.4,color:'#ffd23f',stroke:'#7a4a00',life:1.6});
+    beep(784,0.12); setTimeout(()=>beep(1046,0.18),110);
+  }
+}
+
+// ---------------- 操控 ----------------
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), plane=new THREE.Plane(new THREE.Vector3(0,1,0),0), hit=new THREE.Vector3();
+let dragging=false, dragStartX=0, dragStartTx=0;
+function setRay(cx,cy){ ndc.set(cx/innerWidth*2-1, -(cy/innerHeight)*2+1); ray.setFromCamera(ndc,camera); }
+function worldXAt(cx,cy){ setRay(cx,cy); return ray.ray.intersectPlane(plane,hit) ? hit.x : 0; }
+canvas.addEventListener('pointerdown',e=>{
+  if(!G||!running) return;
+  document.getElementById('hint').style.display='none';
+  setRay(e.clientX,e.clientY);
+  for (const side of ['L','R']){ const s=G.gates[side]; if(!s.mesh) continue;
+    if (ray.intersectObject(s.mesh.grp,true).length){ G.tx = SIDES[side].x; chooseGate(side); return; } }
+  dragging=true; dragStartX=worldXAt(e.clientX,e.clientY); dragStartTx=G.tx; canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{ if(!dragging||!G) return; const x=worldXAt(e.clientX,e.clientY); G.tx=Math.max(-6.8,Math.min(6.8, dragStartTx+(x-dragStartX)*1.1)); });
+const endDrag=()=>{dragging=false;}; canvas.addEventListener('pointerup',endDrag); canvas.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{ if(!G) return; if(e.key==='ArrowLeft') G.tx=Math.max(-6.8,G.tx-3); if(e.key==='ArrowRight') G.tx=Math.min(6.8,G.tx+3); });
+
+// ---------------- 主循環 ----------------
+function squadRadius(){ return 0.31*Math.sqrt(Math.min(G.army,160))+0.35; }
+function fire(dt){
+  G.volley-=dt; if (G.volley>0) return;
+  G.volley = Math.max(0.22, 0.3 - G.level*0.02);
+  const shown=Math.min(G.army,160); if(!shown) return;
+  const n=Math.min(24, Math.ceil(G.army/12)) + G.level;
+  for(let k=0;k<n;k++){
+    const a=arrows.find(a=>!a.on); if(!a) break;
+    const s=G.slots[Math.floor(Math.random()*shown)];
+    a.on=true; a.x=s.x+(Math.random()-.5)*0.2; a.y=1.2; a.z=s.z-0.3;
+  }
+  if (Math.random()<0.5) beep(900+Math.random()*200,0.03,'triangle',0.012);
+}
+function step(dt){
+  const S=G.S; G.t+=dt;
+  G.sx += (G.tx-G.sx)*Math.min(1,dt*10);
+  const shown=Math.min(G.army,160);
+  for(let i=0;i<shown;i++){ const r=0.31*Math.sqrt(i), th=i*2.39996; const s=G.slots[i];
+    const tx=G.sx+Math.cos(th)*r, tz=L.SQUAD_Z+Math.sin(th)*r*0.8;
+    s.x+=(tx-s.x)*Math.min(1,dt*8); s.z+=(tz-s.z)*Math.min(1,dt*8); }
+  fire(dt);
+  // 選擇門：滑入、倒數、消失
+  for (const side of ['L','R']){ const s=G.gates[side];
+    if (!s.g){ s.wait-=dt; if (s.wait<=0) spawnGate(side); continue; }
+    s.z += (GATE_Z - s.z)*Math.min(1,dt*7); s.mesh.grp.position.z=s.z;
+    if (s.z > GATE_Z-3){ s.age+=dt; const k=Math.max(0,1-s.age/S.life);
+      s.mesh.bar.scale.x=Math.max(0.001,k); s.mesh.bar.position.x=-1.7*(1-k);
+      s.mesh.bar.material.color.setHex(k<0.35?0xff5a3a:0xffd23f);
+      if (s.age>=S.life){ expireGate(side); } }
+  }
+  // 行入左右步道 = 選擇該邊的門（要先返回中間才可再選）
+  const zone = G.sx < -3.9 ? 'L' : G.sx > 3.9 ? 'R' : 'C';
+  if (zone!==G.zone){ if (zone!=='C') chooseGate(zone); G.zone=zone; }
+  // 敵軍大隊：首領前面長期維持一大群紅兵（似原作），被射少了就由首領身後補充
+  const target = Math.min(230, S.horde + G.t*0.6);
+  G.spawn += dt*S.refill;
+  let inLane=0; for (const e of G.enemies) if (e.z < L.EXIT) inLane++;
+  while (G.spawn>=1){ G.spawn-=1; if (inLane>=target || G.enemies.length>=255) { G.spawn=0; break; }
+    for (let k=0;k<6;k++){ G.enemies.push({x:-2.8+k*1.12+(Math.random()-.5)*0.3, z:G.boss.z+2.6+Math.random()*0.6, ph:Math.random()*6, hp:enemyHP()}); inLane++; } }
+  // 中路道具：炸藥桶（射爆清走附近敵兵）、寶箱（射爆加士兵）
+  G.propT-=dt;
+  if (G.propT<=0){ G.propT = R(9,14); spawnProp(Math.random()<0.5 ? 'barrel' : 'chest'); }
+  for (let i=G.props.length-1;i>=0;i--){ const p=G.props[i]; p.z += S.hordeSpeed*dt; p.grp.position.z=p.z;
+    p.grp.rotation.y = p.type==='chest' ? Math.sin(G.t*2)*0.2 : 0;
+    if (p.z > L.EXIT){ scene.remove(p.grp); G.props.splice(i,1); } }
+  G.boss.z += S.bossSpeed*dt; G.boss.grp.position.z=G.boss.z; G.boss.grp.rotation.y=Math.sin(G.t*1.5)*0.08;
+  const rad=squadRadius();
+  for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i];
+    if (e.z < L.EXIT) { e.z += S.hordeSpeed*dt*(e.z > G.boss.z+12 ? 1.6 : 1); e.x=Math.max(-3,Math.min(3,e.x)); }
+    else { e.z += S.enemySpeed*dt*0.7; }
+    if (e.z < L.EXIT) {}
+    else { const dx=G.sx-e.x, dz=L.SQUAD_Z-e.z, d=Math.hypot(dx,dz)||1;
+      e.x+=dx/d*S.enemySpeed*dt*0.9; e.z+=dz/d*S.enemySpeed*dt*0.3;
+      if (d < rad+0.3){ G.enemies.splice(i,1); G.army-=1; burst(e.x,0.8,e.z,0xffffff,6,3); beep(180,0.06,'sawtooth',0.03); continue; } }
+    if (e.z > L.SQUAD_Z+6) G.enemies.splice(i,1);
+  }
+  // 箭矢（左右步道的箭不會打門；只有中路有效）
+  const bossZ=G.boss.z, dmg=1+G.level*0.25;
+  for (const a of arrows){ if(!a.on) continue;
+    a.z -= 46*dt;
+    if (a.z < -95){ a.on=false; continue; }
+    if (Math.abs(a.x) > 3.6){ if (a.z < GATE_Z+0.5) a.on=false; continue; }
+    let hitP=false;
+    for (const p of G.props){ if (Math.abs(p.x-a.x)<1.0 && a.z < p.z+0.8 && a.z > p.z-1.2){ a.on=false; hitP=true; p.hp-=dmg; p.flash=0.06;
+        setSpriteText(p.label,String(Math.max(0,Math.ceil(p.hp)))); if (p.hp<=0) breakProp(p); break; } }
+    if (hitP) continue;
+    let hitE=-1;
+    for (let i=0;i<G.enemies.length;i++){ const e=G.enemies[i]; if (Math.abs(e.x-a.x)<0.42 && Math.abs(e.z-a.z)<0.6){ hitE=i; break; } }
+    if (hitE>=0){ const e=G.enemies[hitE]; a.on=false; e.hp-=dmg; if (e.hp<=0){ G.enemies.splice(hitE,1); burst(e.x,0.8,e.z,0xffe066,5,3); } continue; }
+    if (Math.abs(a.x)<2.6 && a.z < bossZ+1.2){ a.on=false; G.boss.hp-=dmg; G.boss.flash=0.06;
+      setSpriteText(G.boss.label,String(Math.max(0,Math.ceil(G.boss.hp))));
+      if (G.boss.hp<=0) return endGame(true); }
+  }
+  if (G.army<=0){ G.army=0; return endGame(false); }
+  if (G.boss.z > L.EXIT-1.5) return endGame(false);
+}
+
+function render(dt){
+  if (G){
+    const shown=Math.min(G.army,160);
+    for(let i=0;i<shown;i++){ const s=G.slots[i]; const bob=Math.abs(Math.sin(G.t*9+i))*0.06;
+      armyArt.soldier(camera,blueArmy,i,s.x,s.z,bob); }
+    armyArt.flush(blueArmy,shown);
+    const ne=Math.min(G.enemies.length,260);
+    for(let i=0;i<ne;i++){ const e=G.enemies[i]; armyArt.soldier(camera,redArmy,i,e.x,e.z,Math.abs(Math.sin(G.t*8+e.ph))*0.08); }
+    armyArt.flush(redArmy,ne);
+    water.offset.set(G.t*.0018,G.t*.0025);
+    setSpriteText(G.armyLabel,String(G.army));
+    G.armyLabel.position.set(G.sx, 2.4+squadRadius()*0.2, L.SQUAD_Z-squadRadius()-0.5);
+    G.boss.grp.children[0].material.color.setHex(G.boss.flash>0?0xffc6a1:0xffffff); G.boss.flash-=dt;
+    for (const side of ['L','R']){ const s=G.gates[side]; if(s.mesh) s.mesh.lab.position.y=2.1+Math.sin(G.t*5)*0.06; }
+  }
+  let ai=0; for (const a of arrows){ if(!a.on) continue; dummy.position.set(a.x,a.y,a.z); dummy.rotation.set(0,0,0); dummy.updateMatrix(); arrowMesh.setMatrixAt(ai++,dummy.matrix); }
+  arrowMesh.count=ai; arrowMesh.instanceMatrix.needsUpdate=true;
+  for (let i=0;i<MAXP;i++){ const p=parts[i]; if(!p.on){ dummy.position.set(0,-50,0); dummy.updateMatrix(); pMesh.setMatrixAt(i,dummy.matrix); continue; }
+    p.life-=dt; if(p.life<=0){p.on=false; continue;} p.vy-=9*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.z+=p.vz*dt;
+    dummy.position.set(p.x,p.y,p.z); dummy.rotation.set(p.life*8,p.life*6,0); dummy.scale.setScalar(Math.min(1,p.life*2)); dummy.updateMatrix(); pMesh.setMatrixAt(i,dummy.matrix); dummy.scale.setScalar(1); }
+  pMesh.instanceMatrix.needsUpdate=true;
+  for (let i=floats.length-1;i>=0;i--){ const f=floats[i]; f.life-=dt; f.sp.position.y+=f.vy*dt; f.sp.material.opacity=Math.min(1,f.life*1.5);
+    if (f.life<=0){ scene.remove(f.sp); f.sp.material.map.dispose(); f.sp.material.dispose(); floats.splice(i,1); } }
+  flushLabels();
+  renderer.render(scene,camera);
+}
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if (G && running && !paused && !G.over) step(dt);
+  render((running&&!paused)?dt:0);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ---------------- 介面 ----------------
+const $=id=>document.getElementById(id);
+function start(){
+  try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); actx.resume&&actx.resume(); }catch(e){}
+  try{ localStorage.setItem('armyMathCfg2',JSON.stringify(cfg)); }catch(e){}
+  newGame(); running=true; paused=false;
+  $('menu').style.display='none'; $('endMenu').style.display='none'; $('pauseBtn').style.display='block';
+  $('hint').style.display='block';
+}
+function endGame(win){
+  G.over=true; running=false; $('pauseBtn').style.display='none';
+  if (win){ burst(0,4,G.boss.z,0xffd23f,60,10); scene.remove(G.boss.grp); beep(523,0.15); setTimeout(()=>beep(659,0.15),150); setTimeout(()=>beep(784,0.3),300); }
+  else beep(160,0.4,'sawtooth',0.05);
+  setTimeout(()=>{
+    $('endTitle').textContent = win ? '勝利！打敗首領！' : (G.army<=0 ? '軍隊全軍覆沒' : '首領衝過來了');
+    $('stMax').textContent=G.maxArmy; $('stAcc').textContent=`${G.good}/${G.total}`; $('stTime').textContent=Math.round(G.t);
+    $('log').innerHTML = G.log.length ? G.log.slice(-40).map(l=>`<div class="${l.best?'ok':'no'}">${l.best?'✓':'✗'} ${l.line}${l.better?`（揀 ${l.better} 會更多）`:''}</div>`).join('') : '<div>未有選擇任何門</div>';
+    $('endMenu').style.display='flex';
+  }, win?900:600);
+}
+$('startBtn').onclick=start; $('againBtn').onclick=start;
+$('homeBtn').onclick=()=>{ $('endMenu').style.display='none'; $('menu').style.display='flex'; };
+$('pauseBtn').onclick=()=>{ paused=true; $('pauseMenu').style.display='flex'; };
+$('resumeBtn').onclick=()=>{ paused=false; $('pauseMenu').style.display='none'; };
+$('quitBtn').onclick=()=>{ paused=false; running=false; $('pauseMenu').style.display='none'; $('pauseBtn').style.display='none'; $('menu').style.display='flex'; };
+newGame();
+})();
+</script>
+</body>
+</html>
