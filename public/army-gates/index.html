@@ -60,6 +60,7 @@
   #lvl.crossbow{background-image:url(art/crossbow.webp)}
   #hint{font-size:clamp(13px,3.5vw,22px)}
 </style>
+<link rel="stylesheet" href="./cannon.css">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -69,6 +70,14 @@
 <button id="pauseBtn">❚❚</button>
 <div class="hud" id="hint">◀ 拖動軍隊到左／右，或直接點選門 ▶</div>
 <div class="hud" id="feedback"></div>
+
+<section id="quizCard" aria-labelledby="quizHeading" hidden>
+  <div class="quiz-top"><strong id="quizHeading">答題大炮</strong><span id="quizClock"></span></div>
+  <progress id="quizTimer" aria-label="剩餘作答時間"></progress>
+  <div id="quizMath" aria-live="polite"></div>
+  <div id="quizChoices"><button type="button"></button><button type="button"></button></div>
+  <div id="quizResult" role="status"></div>
+</section>
 
 <div class="overlay" id="menu">
   <div class="panel">
@@ -92,6 +101,14 @@
         <button class="opt" data-v="mid">普通<span class="lvl-desc">門停2.5秒</span></button>
         <button class="opt" data-v="hard">困難<span class="lvl-desc">敵兵多・門停2秒</span></button>
       </div></div>
+    <div class="row"><div class="lab">答題大炮</div>
+      <div class="opts" data-k="quizSeconds">
+        <button class="opt" data-v="0">關閉</button>
+        <button class="opt on" data-v="5">5 秒</button>
+        <button class="opt" data-v="3">3 秒</button>
+      </div>
+      <p class="note">先選一道門。大炮出題時，限時答對即可擊退一批敵兵。</p>
+    </div>
     <button class="big" id="startBtn">開始遊戲</button>
   </div>
 </div>
@@ -114,6 +131,7 @@
     </div>
     <div class="lab" style="text-align:left;font-weight:900;color:#1c4f9c">今局的選擇</div>
     <div id="log"></div>
+    <section id="quizReview" hidden><h2>即時問答</h2><p id="quizScore"></p><ul id="quizErrors"></ul></section>
     <button class="big blue" id="againBtn">再玩一次</button>
     <button class="big" id="homeBtn">返回主頁</button>
   </div>
@@ -121,19 +139,21 @@
 
 <script src="./vendor/three-r128.min.js"></script>
 <script src="./art.js"></script>
+<script src="./cannon.js"></script>
 <script>
 (() => {
 'use strict';
 // ---------------- 設定 ----------------
-const cfg = { level:'1', range:20, speed:'easy' };
+const cfg = { level:'1', range:20, speed:'easy', quizSeconds:5 };
 try { const s = JSON.parse(localStorage.getItem('armyMathCfg2')||'null'); if (s) Object.assign(cfg, s); } catch(e){}
+if (![0,3,5].includes(cfg.quizSeconds)) cfg.quizSeconds=5;
 if (!['easy','mid','hard'].includes(cfg.speed)) cfg.speed='easy';
 document.querySelectorAll('.opts').forEach(g => {
   const k = g.dataset.k;
   g.querySelectorAll('.opt').forEach(b => {
     b.classList.toggle('on', String(cfg[k]) === b.dataset.v);
     b.onclick = () => { g.querySelectorAll('.opt').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-      cfg[k] = k==='range' ? +b.dataset.v : b.dataset.v; };
+      cfg[k] = (k==='range' || k==='quizSeconds') ? +b.dataset.v : b.dataset.v; };
   });
 });
 const SPEEDS = {
@@ -178,6 +198,7 @@ const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-10, 30
 
 const L = { X:-6.4, C:0, RX:6.4, SIDE_W:4.4, CEN_W:6.8, EXIT:-4, SQUAD_Z:4.2 };
 const lam = c => new THREE.MeshLambertMaterial({color:c});
+const cannon = createQuizCannon(scene);
 const landscape = armyArt.landscape(scene,L);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const bossFigure = armyArt.marchingFigure('warlord',5.8,6.4);
@@ -296,12 +317,14 @@ const GATE_Z = -4.2;
 
 function clearGate(side){ const s=G.gates[side]; if(s.mesh){ scene.remove(s.mesh.grp); s.mesh=null; } s.g=null; }
 function newGame(){
+  clearQuiz(); dragging=false;
   if (G){ clearGate('L'); clearGate('R'); G.props.forEach(p=>scene.remove(p.grp)); scene.remove(G.boss.grp); scene.remove(G.armyLabel);
     floats.forEach(f=>scene.remove(f.sp)); floats.length=0; }
   const S=SPEEDS[cfg.speed];
   const bossHP = S.bossHP;
   const startArmy = cfg.range*2;
   G={ S, t:0, army:startArmy, maxArmy:startArmy, sx:0, tx:0, level:0, volley:0, spawn:0, log:[], good:0, total:0,
+      quizNext:12, quizLog:[], lastGate:-10, nextMath:cannonQuestions(cfg.level,cfg.range),
       enemies:[], props:[], propT:6, slots:[], over:false, zone:'C',
       gates:{ L:{g:null,mesh:null,age:0,wait:0.8, born:0}, R:{g:null,mesh:null,age:0,wait:0.3, born:0} } };
   const bg=new THREE.Group(); bg.add(bossFigure.group); bg.position.set(0,0,-28); scene.add(bg);
@@ -337,6 +360,7 @@ function chooseGate(side){
   let best=true, better=null;
   if (o.g && o.z > GATE_Z-3){ const alt=apply(before,o.g); if (alt>apply(before,s.g)){ best=false; better=o.g; } }
   else if (apply(before,s.g) < before){ best=false; }
+  G.lastGate=G.t;
   G.total++; if(best) G.good++;
   G.army=after; G.maxArmy=Math.max(G.maxArmy,G.army);
   const opTxt = s.g.label ? `${s.g.op} (${s.g.label.slice(1)})` : `${s.g.op} ${s.g.n}`;
@@ -395,16 +419,16 @@ let dragging=false, dragStartX=0, dragStartTx=0;
 function setRay(cx,cy){ ndc.set(cx/innerWidth*2-1, -(cy/innerHeight)*2+1); ray.setFromCamera(ndc,camera); }
 function worldXAt(cx,cy){ setRay(cx,cy); return ray.ray.intersectPlane(plane,hit) ? hit.x : 0; }
 canvas.addEventListener('pointerdown',e=>{
-  if(!G||!running) return;
+  if(!G || !running || paused || quiz) return;
   document.getElementById('hint').style.display='none';
   setRay(e.clientX,e.clientY);
   for (const side of ['L','R']){ const s=G.gates[side]; if(!s.mesh) continue;
     if (ray.intersectObject(s.mesh.grp,true).length){ G.tx = SIDES[side].x; chooseGate(side); return; } }
   dragging=true; dragStartX=worldXAt(e.clientX,e.clientY); dragStartTx=G.tx; canvas.setPointerCapture(e.pointerId);
 });
-canvas.addEventListener('pointermove',e=>{ if(!dragging||!G) return; const x=worldXAt(e.clientX,e.clientY); G.tx=Math.max(-6.8,Math.min(6.8, dragStartTx+(x-dragStartX)*1.1)); });
+canvas.addEventListener('pointermove',e=>{ if(!dragging || !G || paused || quiz) return; const x=worldXAt(e.clientX,e.clientY); G.tx=Math.max(-6.8,Math.min(6.8, dragStartTx+(x-dragStartX)*1.1)); });
 const endDrag=()=>{dragging=false;}; canvas.addEventListener('pointerup',endDrag); canvas.addEventListener('pointercancel',endDrag);
-addEventListener('keydown',e=>{ if(!G) return; if(e.key==='ArrowLeft') G.tx=Math.max(-6.8,G.tx-3); if(e.key==='ArrowRight') G.tx=Math.min(6.8,G.tx+3); });
+addEventListener('keydown',e=>{ if(!G || !running || paused || quiz) return; if(e.key==='ArrowLeft') G.tx=Math.max(-6.8,G.tx-3); if(e.key==='ArrowRight') G.tx=Math.min(6.8,G.tx+3); });
 
 // ---------------- 主循環 ----------------
 function squadRadius(){ return 0.31*Math.sqrt(Math.min(G.army,160))+0.35; }
@@ -421,25 +445,29 @@ function fire(dt){
   if (Math.random()<0.5) beep(900+Math.random()*200,0.03,'triangle',0.012);
 }
 function step(dt){
+  const protectedTime=!!quiz;
+  if (protectedTime) dt*=.25;
   const S=G.S; G.t+=dt;
   G.sx += (G.tx-G.sx)*Math.min(1,dt*10);
   const shown=Math.min(G.army,160);
   for(let i=0;i<shown;i++){ const r=0.31*Math.sqrt(i), th=i*2.39996; const s=G.slots[i];
     const tx=G.sx+Math.cos(th)*r, tz=L.SQUAD_Z+Math.sin(th)*r*0.8;
     s.x+=(tx-s.x)*Math.min(1,dt*8); s.z+=(tz-s.z)*Math.min(1,dt*8); }
-  fire(dt);
-  // 選擇門：滑入、倒數、消失
-  for (const side of ['L','R']){ const s=G.gates[side];
-    if (!s.g){ s.wait-=dt; if (s.wait<=0) spawnGate(side); continue; }
-    s.z += (GATE_Z - s.z)*Math.min(1,dt*7); s.mesh.grp.position.z=s.z;
-    if (s.z > GATE_Z-3){ s.age+=dt; const k=Math.max(0,1-s.age/S.life);
-      s.mesh.bar.scale.x=Math.max(0.001,k); s.mesh.bar.position.x=-1.7*(1-k);
-      s.mesh.bar.material.color.setHex(k<0.35?0xff5a3a:0xffd23f);
-      if (s.age>=S.life){ expireGate(side); } }
+  if (!protectedTime) {
+    fire(dt);
+    // 選擇門：滑入、倒數、消失
+    for (const side of ['L','R']){ const s=G.gates[side];
+      if (!s.g){ s.wait-=dt; if (s.wait<=0) spawnGate(side); continue; }
+      s.z += (GATE_Z - s.z)*Math.min(1,dt*7); s.mesh.grp.position.z=s.z;
+      if (s.z > GATE_Z-3){ s.age+=dt; const k=Math.max(0,1-s.age/S.life);
+        s.mesh.bar.scale.x=Math.max(0.001,k); s.mesh.bar.position.x=-1.7*(1-k);
+        s.mesh.bar.material.color.setHex(k<0.35?0xff5a3a:0xffd23f);
+        if (s.age>=S.life){ expireGate(side); } }
+    }
+    // 行入左右步道 = 選擇該邊的門（要先返回中間才可再選）
+    const zone = G.sx < -3.9 ? 'L' : G.sx > 3.9 ? 'R' : 'C';
+    if (zone!==G.zone){ if (zone!=='C') chooseGate(zone); G.zone=zone; }
   }
-  // 行入左右步道 = 選擇該邊的門（要先返回中間才可再選）
-  const zone = G.sx < -3.9 ? 'L' : G.sx > 3.9 ? 'R' : 'C';
-  if (zone!==G.zone){ if (zone!=='C') chooseGate(zone); G.zone=zone; }
   // 敵軍大隊：首領前面長期維持一大群紅兵（似原作），被射少了就由首領身後補充
   const target = Math.min(230, S.horde + G.t*0.6);
   G.spawn += dt*S.refill;
@@ -460,10 +488,11 @@ function step(dt){
     if (e.z < L.EXIT) {}
     else { const dx=G.sx-e.x, dz=L.SQUAD_Z-e.z, d=Math.hypot(dx,dz)||1;
       e.x+=dx/d*S.enemySpeed*dt*0.9; e.z+=dz/d*S.enemySpeed*dt*0.3;
-      if (d < rad+0.3){ G.enemies.splice(i,1); G.army-=1; burst(e.x,0.8,e.z,0xffffff,6,3); beep(180,0.06,'sawtooth',0.03); continue; } }
+      if (!protectedTime && d < rad+0.3){ G.enemies.splice(i,1); G.army-=1; burst(e.x,0.8,e.z,0xffffff,6,3); beep(180,0.06,'sawtooth',0.03); continue; } }
     if (e.z > L.SQUAD_Z+6) G.enemies.splice(i,1);
   }
   // 箭矢（左右步道的箭不會打門；只有中路有效）
+  if (protectedTime) return;
   const bossZ=G.boss.z, dmg=1+G.level*0.25;
   for (const a of arrows){ if(!a.on) continue;
     a.z -= 46*dt;
@@ -513,10 +542,81 @@ function render(dt){
   renderer.render(scene,camera);
 }
 
+const quizCard=document.getElementById('quizCard');
+const quizButtons=[...document.querySelectorAll('#quizChoices button')];
+let quiz=null;
+function clearQuiz(){
+  quiz=null; quizCard.hidden=true; cannon.hide();
+}
+function offerQuiz(){
+  if(!cfg.quizSeconds || !G.total || G.t<G.quizNext || dragging ||
+      Math.abs(G.tx-G.sx)>.12 || G.t-G.lastGate<1.4 || G.enemies.length<3) return;
+  if(!cannon.aim(G)) { G.quizNext=G.t+.5; return; }
+  const q=G.nextMath();
+  quiz={q,phase:'question',remaining:cfg.quizSeconds,deadline:null,age:0};
+  cannon.show(G);
+  $('hint').style.display='none';
+  $('quizMath').textContent=q.expression+' = ?';
+  $('quizClock').textContent=cfg.quizSeconds+' 秒';
+  $('quizTimer').max=cfg.quizSeconds; $('quizTimer').value=cfg.quizSeconds;
+  $('quizTimer').hidden=false; $('quizResult').textContent='';
+  $('quizChoices').hidden=false;
+  quizButtons.forEach((b,i)=>{b.textContent=q.options[i];b.disabled=false;});
+  quizCard.hidden=false;
+  beep(660,.12,'sine');
+}
+function answerQuiz(value){
+  if(!quiz || quiz.phase!=='question' || paused || !running) return;
+  if(quiz.deadline!==null && performance.now()>=quiz.deadline) value=null;
+  const q=quiz.q, correct=value===q.answer;
+  G.quizLog.push({expression:q.expression,answer:q.answer,chosen:value});
+  quiz.phase='result';quiz.age=0;
+  $('quizMath').textContent=q.expression+' = '+q.answer;
+  $('quizTimer').hidden=true; $('quizChoices').hidden=true;
+  quizButtons.forEach(b=>b.disabled=true);
+  $('quizClock').textContent='';
+  $('quizResult').textContent=correct?'答對了！大炮發射！':value===null?'時間到，看看正確答案。':'再試一次，看看正確答案。';
+  if(correct){
+    cannon.aim(G);cannon.show(G);cannon.fire();beep(150,.22,'triangle',.085);
+  }else beep(300,.12,'sine');
+}
+quizButtons.forEach((b,i)=>b.addEventListener('click',()=>{if(quiz) answerQuiz(quiz.q.options[i]);}));
+function quizTick(now,dt){
+  if(!quiz){offerQuiz();return;}
+  if(quiz.phase==='question'){
+    if(quiz.deadline===null) quiz.deadline=now+quiz.remaining*1000;
+    quiz.remaining=Math.max(0,(quiz.deadline-now)/1000);
+    $('quizTimer').value=quiz.remaining;
+    const clock=Math.ceil(quiz.remaining)+' 秒';
+    if($('quizClock').textContent!==clock) $('quizClock').textContent=clock;
+    if(quiz.remaining===0) answerQuiz(null);
+    return;
+  }
+  quiz.age+=dt;
+  cannon.tick(dt,G,(at,count)=>{
+    burst(at.x,1,at.z,0x86ffef,32,8);
+    floatText('擊退 '+count+' 名敵兵',at.x,2.1,at.z,{h:1.25,color:'#fff39a',life:1.05});
+    $('quizResult').textContent='擊退 '+count+' 名敵兵';
+  });
+  if(quiz.age>=1.35){clearQuiz();G.quizNext=G.t+R(18,22);}
+}
+function reviewQuiz(){
+  $('quizReview').hidden=!cfg.quizSeconds;
+  const missed=G.quizLog.filter(r=>r.chosen!==r.answer);
+  $('quizScore').textContent='答對 '+(G.quizLog.length-missed.length)+'／'+G.quizLog.length+' 題';
+  $('quizErrors').replaceChildren(...missed.map(r=>{
+    const item=document.createElement('li');
+    item.textContent=r.expression+' = '+r.answer+'（'+(r.chosen===null?'超時':'所選答案：'+r.chosen)+'）';
+    return item;
+  }));
+}
 let last=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
-  if (G && running && !paused && !G.over) step(dt);
+  if (G && running && !paused && !G.over) {
+    step(dt);
+    if(running) quizTick(now,dt);
+  }
   render((running&&!paused)?dt:0);
   requestAnimationFrame(loop);
 }
@@ -532,6 +632,7 @@ function start(){
   $('hint').style.display='block';
 }
 function endGame(win){
+  clearQuiz(); reviewQuiz();
   G.over=true; running=false; $('pauseBtn').style.display='none';
   if (win){ burst(0,4,G.boss.z,0xffd23f,60,10); scene.remove(G.boss.grp); beep(523,0.15); setTimeout(()=>beep(659,0.15),150); setTimeout(()=>beep(784,0.3),300); }
   else beep(160,0.4,'sawtooth',0.05);
@@ -544,9 +645,17 @@ function endGame(win){
 }
 $('startBtn').onclick=start; $('againBtn').onclick=start;
 $('homeBtn').onclick=()=>{ $('endMenu').style.display='none'; $('menu').style.display='flex'; };
-$('pauseBtn').onclick=()=>{ paused=true; $('pauseMenu').style.display='flex'; };
+function pauseGame(){
+  if(!running || paused) return;
+  if(quiz?.phase==='question' && quiz.deadline!==null){
+    quiz.remaining=Math.max(0,(quiz.deadline-performance.now())/1000);quiz.deadline=null;
+  }
+  paused=true;dragging=false;$('pauseMenu').style.display='flex';
+}
+$('pauseBtn').onclick=pauseGame;
+document.addEventListener('visibilitychange',()=>{if(document.hidden && cfg.quizSeconds) pauseGame();});
 $('resumeBtn').onclick=()=>{ paused=false; $('pauseMenu').style.display='none'; };
-$('quitBtn').onclick=()=>{ paused=false; running=false; $('pauseMenu').style.display='none'; $('pauseBtn').style.display='none'; $('menu').style.display='flex'; };
+$('quitBtn').onclick=()=>{ clearQuiz(); paused=false; running=false; $('pauseMenu').style.display='none'; $('pauseBtn').style.display='none'; $('menu').style.display='flex'; };
 newGame();
 })();
 </script>
