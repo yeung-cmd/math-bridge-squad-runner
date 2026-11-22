@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
-import { ArrowRight, Castle, RadioTower } from 'lucide-react';
+import { ArrowRight, Castle, Flag, RadioTower } from 'lucide-react';
 
 const BridgeGame = lazy(() => import('../App'));
 const RescueGame = lazy(() => import('./RescueGame'));
@@ -23,7 +23,7 @@ export default function GameHub() {
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight">數學跑道樂園</h1>
           <p className="mt-3 text-lg text-slate-300">選擇遊戲</p>
         </header>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <button type="button" className="game-card game-card-bridge" onClick={() => setGame('bridge')}>
             <span className="game-card-icon"><Castle size={44} aria-hidden="true" /></span>
             <span className="text-2xl font-black">數學橋樑軍團大作戰</span>
@@ -36,6 +36,12 @@ export default function GameHub() {
             <span className="text-slate-300 text-sm">帶領機械人守橋，答對問題便可發射能量彈，擊退逼近的怪物。</span>
             <span className="game-card-action">進入設定 <ArrowRight size={18} /></span>
           </button>
+          <a href="./army-gates/" className="game-card bg-gradient-to-br from-amber-950 to-slate-900">
+            <span className="game-card-icon"><Flag size={44} aria-hidden="true" /></span>
+            <span className="text-2xl font-black">數學大軍闖關</span>
+            <span className="text-slate-300 text-sm">比較兩道數學門，選出能令士兵最多的一道。</span>
+            <span className="game-card-action">進入設定 <ArrowRight size={18} /></span>
+          </a>
         </div>
       </div>
     </main>
