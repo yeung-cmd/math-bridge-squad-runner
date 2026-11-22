@@ -28,6 +28,46 @@ const armyArt = (() => {
     sp.center.set(.5,0); sp.scale.set(w,h,1);
     return sp;
   }
+  // A subdivided figure lets one boot plant while the other rises. The
+  // shadow stays on the deck as the hips and shoulders transfer weight.
+  function marchingFigure(name, width, height) {
+    const group = new THREE.Group();
+    const geometry = new THREE.PlaneGeometry(width, height, 12, 16);
+    geometry.translate(0, height / 2, 0);
+    const body = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+      map: texture(name), alphaTest: .24, side: THREE.DoubleSide
+    }));
+    const positions = geometry.attributes.position;
+    positions.setUsage(THREE.DynamicDrawUsage);
+    const rest = positions.array.slice();
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 24),
+      new THREE.MeshBasicMaterial({color: 0x3b383a, transparent:true, opacity:.25, depthWrite:false}));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = .026;
+    shadow.scale.set(width * .38, width * .22, 1);
+    group.add(body, shadow);
+
+    function pose(camera, phase, strength) {
+      body.quaternion.copy(camera.quaternion);
+      const swing = Math.sin(phase) * strength;
+      const shift = Math.cos(phase) * strength;
+      for (let i = 0; i < positions.count; i++) {
+        const x = rest[i * 3], y = rest[i * 3 + 1];
+        const level = y / height;
+        const side = Math.max(-1, Math.min(1, x / (width * .11)));
+        const leg = Math.max(0, 1 - level / .40);
+        const lift = Math.max(0, side * swing) * leg;
+        const lean = .026 * level * shift;
+        positions.setXYZ(i,
+          x + width * (lean + side * lift * .032),
+          y + height * (.115 * lift + level * .019 * Math.abs(swing) - level * side * shift * .013),
+          rest[i * 3 + 2]);
+      }
+      positions.needsUpdate = true;
+      shadow.position.x = width * .016 * shift;
+    }
+    return {group, body, pose};
+  }
   // Stone seams, bevelled edges and mineral flecks, baked once per material.
   function paving(base, mortar, edge, repeatsX, repeatsZ) {
     const c = document.createElement('canvas'); c.width=c.height=256;
@@ -50,6 +90,7 @@ const armyArt = (() => {
     return new THREE.MeshLambertMaterial({map});
   }
   function landscape(scene,L) {
+    const giants = [];
     const water=texture('water');
     water.wrapS=water.wrapT=THREE.MirroredRepeatWrapping; water.repeat.set(14,14);
     const sea=new THREE.Mesh(new THREE.PlaneGeometry(400,400),new THREE.MeshBasicMaterial({map:water,color:0xd3eff0}));
@@ -93,10 +134,11 @@ const armyArt = (() => {
       block(scene,x,4.3,-46.30,.75,1.45,.06,0x19455e);
       block(scene,x,8.9,-48,.07,1.1,.07,0xbf9455);
       block(scene,x+.45,9.12,-48,.9,.45,.05,0xe89842);
-      const plinth=sign*11.1;
-      block(scene,plinth,.05,-32,3.0,2.6,3.0,0x657a81);
-      block(scene,plinth,1.42,-32,3.35,.22,3.35,0xcead72);
-      const sentinel=sprite('giant',3.2,3.5);sentinel.position.set(plinth,1.54,-32);scene.add(sentinel);
+      const giant = marchingFigure('giant', 3.95, 4.55);
+      const startZ = sign < 0 ? -27 : -30;
+      giant.group.position.set(sign * 6.4, .62, startZ);
+      scene.add(giant.group);
+      giants.push({giant, sign, startZ});
     }
     block(scene,0,4.45,-48,9.6,.7,1.2,0x7e929d);
     block(scene,0,4.86,-48,9.7,.15,1.35,0xffcf79);
@@ -114,7 +156,17 @@ const armyArt = (() => {
         crown.position.set(x,-1.25,z);crown.scale.set(1.8,.6,2.2);scene.add(crown);
       }
     }
-    return water;
+    function animate(camera, time, bossTravel, reducedMotion) {
+      water.offset.set(time * .0018, time * .0025);
+      for (const {giant, sign, startZ} of giants) {
+        // Keep approaching throughout the round, staying behind the numbered gates.
+        const distance = 12 * (1 - Math.exp(-time / 25)) + bossTravel * .32;
+        const phase = distance * 5.2 + (sign < 0 ? 0 : Math.PI * .65);
+        giant.group.position.z = startZ + distance;
+        giant.pose(camera, phase, reducedMotion ? 0 : 1);
+      }
+    }
+    return {animate};
   }
   function army(scene,name,capacity,width,height) {
     const units=new THREE.InstancedMesh(new THREE.PlaneGeometry(width,height),
@@ -149,5 +201,5 @@ const armyArt = (() => {
       gem.position.set(s*1.95,3.35,0);gem.raycast=()=>{};group.add(gem);
     }
   }
-  return {sprite,landscape,army,soldier,flush,gateTrim};
+  return {sprite,marchingFigure,landscape,army,soldier,flush,gateTrim};
 })();
