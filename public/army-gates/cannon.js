@@ -28,78 +28,161 @@ function cannonQuestions(level, limit) {
   };
 }
 
-function createQuizCannon(scene) {
-  const base=new THREE.Group(), mount=new THREE.Group();
-  scene.add(base); base.add(mount);
-  const metal=new THREE.MeshPhongMaterial({color:0x24548c,shininess:65});
-  const gold=new THREE.MeshPhongMaterial({color:0xf5bd51,shininess:75});
-  const glow=new THREE.MeshBasicMaterial({color:0x9affff});
-  function mesh(geometry, material, parent) {
-    const m=new THREE.Mesh(geometry,material);parent.add(m);return m;
+function createQuizCannon(scene, camera) {
+  const cart = new THREE.Group();
+  scene.add(cart);
+  const steel = new THREE.MeshPhongMaterial({color:0x214d78, shininess:65});
+  const gold = new THREE.MeshPhongMaterial({color:0xf5bd51, shininess:75});
+  const tire = new THREE.MeshPhongMaterial({color:0x122743, shininess:24});
+  const glow = new THREE.MeshBasicMaterial({color:0x9affff});
+  function mesh(geometry, material, parent, x, y, z) {
+    const part = new THREE.Mesh(geometry, material);
+    part.position.set(x, y, z);
+    parent.add(part);
+    return part;
   }
-  const plinth=mesh(new THREE.CylinderGeometry(.78,.98,.45,12),metal,base);
-  plinth.position.y=.25;
-  const gun=mesh(new THREE.CylinderGeometry(.48,.33,1.85,16),metal,mount);
-  gun.rotation.x=-Math.PI/2;
-  for (const z of [-.82,.46]) {
-    const band=mesh(new THREE.CylinderGeometry(.49,.49,.16,16),gold,mount);
-    band.rotation.x=-Math.PI/2;band.position.z=z;
+
+  mesh(new THREE.BoxGeometry(2.05,.54,2.9), steel, cart, 0,.76,0);
+  mesh(new THREE.BoxGeometry(1.82,.16,2.7), gold, cart, 0,1.09,0);
+  mesh(new THREE.CylinderGeometry(.65,.85,.42,16), steel, cart, 0,1.24,0);
+  const barrel = new THREE.Group();
+  barrel.position.y = 1.68;
+  barrel.rotation.x = .12;
+  cart.add(barrel);
+  mesh(new THREE.CylinderGeometry(.43,.59,2.45,20).rotateX(Math.PI/2), steel, barrel, 0,0,-.28);
+  const collar = new THREE.CylinderGeometry(.61,.61,.2,20).rotateX(Math.PI/2);
+  for (const z of [-1.48,-.72,.6]) mesh(collar, gold, barrel, 0,0,z);
+  mesh(new THREE.SphereGeometry(.42,16,12), tire, barrel, 0,0,-1.21);
+  mesh(new THREE.SphereGeometry(.33,16,12), glow, barrel, 0,0,-1.31);
+
+  const wheels = [];
+  const wheelRadius = .65;
+  const tread = new THREE.CylinderGeometry(wheelRadius,wheelRadius,.32,16).rotateZ(Math.PI/2);
+  const rim = new THREE.TorusGeometry(.49,.08,8,16).rotateY(Math.PI/2);
+  const spoke = new THREE.BoxGeometry(.07,.91,.085);
+  const hub = new THREE.CylinderGeometry(.17,.17,.15,12).rotateZ(Math.PI/2);
+  for (const side of [-1,1]) {
+    for (const z of [-1.02,1.02]) {
+      const wheel = new THREE.Group();
+      wheel.position.set(side*1.07,wheelRadius,z);
+      cart.add(wheel);
+      mesh(tread,tire,wheel,0,0,0);
+      mesh(rim,gold,wheel,side*.19,0,0);
+      for (const angle of [0,Math.PI/3,Math.PI*2/3]) {
+        mesh(spoke,gold,wheel,side*.19,0,0).rotation.x=angle;
+      }
+      mesh(hub,steel,wheel,side*.23,0,0);
+      wheels.push(wheel);
+    }
   }
-  const muzzle=mesh(new THREE.CircleGeometry(.34,20),glow,mount);
-  muzzle.rotation.y=Math.PI;muzzle.position.z=-.94;
-  mount.position.y=1.05; mount.rotation.x=.42;
-  base.scale.setScalar(1.35);
-  const ball=mesh(new THREE.SphereGeometry(.4,16,10),glow,scene);
-  const haloMat=new THREE.MeshBasicMaterial({color:0xffdc75,transparent:true,depthWrite:false,side:THREE.DoubleSide});
-  const halo=mesh(new THREE.RingGeometry(.85,1,48),haloMat,scene);
-  halo.rotation.x=-Math.PI/2;
-  const origin=new THREE.Vector3(), target=new THREE.Vector3();
-  let age=-1;
-  const radius=4.2, travel=.6;
-  function hide() { base.visible=ball.visible=halo.visible=false;age=-1; }
+
+  const waveMaterial = new THREE.MeshBasicMaterial({
+    color:0x87ffec, transparent:true, depthWrite:false, side:THREE.DoubleSide
+  });
+  const wave = mesh(new THREE.RingGeometry(.82,1,40).rotateX(-Math.PI/2),waveMaterial,scene,0,.24,0);
+  mesh(new THREE.RingGeometry(.62,.68,40).rotateX(-Math.PI/2),waveMaterial,wave,0,.01,0);
+  const radius = 4.2;
+  const homePosition = camera.position.clone();
+  const homeRotation = camera.quaternion.clone();
+  const closePosition = new THREE.Vector3();
+  const closeCamera = camera.clone();
+  let center = null;
+  let roll = null;
+
+  function hide() {
+    if (roll) {
+      camera.position.copy(homePosition);
+      camera.quaternion.copy(homeRotation);
+    }
+    cart.visible=wave.visible=false;
+    center=null;
+    roll=null;
+  }
   hide();
+
   function aim(game) {
-    const near=[...game.enemies].sort((a,b)=>Math.hypot(a.x-game.sx,a.z-4.2)-Math.hypot(b.x-game.sx,b.z-4.2));
-    for(const lead of near) {
-      const group=near.filter(e=>Math.hypot(e.x-lead.x,e.z-lead.z)<radius*.8).slice(0,8);
-      if(group.length<3) continue;
-      target.set(0,.16,0);
-      for(const e of group) {target.x+=e.x;target.z+=e.z;}
-      target.x/=group.length;target.z/=group.length;
+    const near = [...game.enemies].sort((a,b) =>
+      Math.hypot(a.x-game.sx,a.z-4.2)-Math.hypot(b.x-game.sx,b.z-4.2));
+    for (const lead of near) {
+      const group = near.filter(e => Math.hypot(e.x-lead.x,e.z-lead.z)<radius*.8).slice(0,8);
+      if (group.length<3) continue;
+      center = new THREE.Vector3();
+      for (const enemy of group) {
+        center.x+=enemy.x;
+        center.z+=enemy.z;
+      }
+      center.multiplyScalar(1/group.length);
       return true;
     }
     return false;
   }
-  return {
-    hide, aim,
-    show(game) {
-      base.position.set(Math.max(-7,Math.min(7,game.sx+(game.sx>0?-1.7:1.7))),0,2.1);
-      base.rotation.y=Math.atan2(base.position.x-target.x,base.position.z-target.z);
-      base.visible=true;mount.position.z=0;
-    },
-    fire() {
-      age=0; muzzle.getWorldPosition(origin);ball.position.copy(origin);ball.visible=true;
-    },
-    tick(dt,game,onImpact) {
-      if(age<0) return;
-      const previous=age;age+=dt;
-      const t=Math.min(1,age/travel);
-      mount.position.z=.33*Math.max(0,1-age/.24);
-      ball.position.lerpVectors(origin,target,t);ball.position.y+=4*4*t*(1-t);
-      if(previous<travel && age>=travel) {
-        ball.visible=false;halo.visible=true;halo.position.copy(target);
-        const hits=game.enemies.map(e=>({e,d:Math.hypot(e.x-target.x,e.z-target.z)}))
-          .filter(h=>h.d<=radius).sort((a,b)=>a.d-b.d).slice(0,12);
-        const removed=new Set(hits.map(h=>h.e));
-        game.enemies=game.enemies.filter(e=>!removed.has(e));
-        onImpact(target,hits.length);
-      }
-      if(age>=travel) {
-        const fade=Math.min(1,(age-travel)/.42);
-        halo.scale.setScalar(.3+(radius-.3)*fade);
-        haloMat.opacity=1-fade;
-        if(fade===1) {halo.visible=false;age=-1;}
-      }
+
+  function start(game, reducedMotion) {
+    aim(game);
+    const targets = game.enemies.map(enemy => ({enemy, distance:Math.hypot(enemy.x-center.x,enemy.z-center.z)}))
+      .filter(hit => hit.distance<=radius)
+      .sort((a,b) => a.distance-b.distance)
+      .slice(0,12)
+      .map(hit => hit.enemy)
+      .sort((a,b) => b.z-a.z);
+    const front = targets[0]?.z ?? center.z;
+    const back = targets.at(-1)?.z ?? center.z;
+    roll = {
+      targets, front, back, age:0, count:0, nextTrack:0,
+      x:THREE.MathUtils.clamp(center.x,-1.1,1.1), reducedMotion
+    };
+    cart.position.set(roll.x,0,front+9);
+    cart.visible=true;
+  }
+
+  function tick(dt, game, onSweep, onTrack) {
+    roll.age+=dt;
+    const approach = Math.min(1,roll.age/1.05);
+    const sweep = THREE.MathUtils.clamp((roll.age-1.05)/1.06,0,1);
+    const before = roll.front+1.6;
+    // Follow through at a slower speed so the advancing line of stars stays visible.
+    const z = approach<1
+      ? THREE.MathUtils.lerp(roll.front+9,before,approach)
+      : THREE.MathUtils.lerp(before,roll.back-2.1,sweep);
+    cart.position.z=z;
+    const distance = roll.front+9-z;
+    cart.position.y=roll.reducedMotion ? 0 : (Math.sin(distance*7)+1)*.022;
+    for (const wheel of wheels) wheel.rotation.x=-distance/wheelRadius;
+
+    if (sweep<1 && distance>=roll.nextTrack) {
+      roll.nextTrack=distance+1.45;
+      onTrack(roll.x,z+.9);
     }
-  };
+
+    while (roll.targets.length && z-1.55<=roll.targets[0].z) {
+      const enemy=roll.targets.shift();
+      const index=game.enemies.indexOf(enemy);
+      if (index===-1) continue;
+      game.enemies.splice(index,1);
+      roll.count++;
+      onSweep(enemy,roll.count);
+    }
+
+    if (sweep>0 && roll.age<2.47) {
+      wave.visible=true;
+      wave.position.set(roll.x,.24,z-1.4);
+      wave.scale.set(3.5,1,1.12);
+      waveMaterial.opacity=.72*(1-THREE.MathUtils.clamp((roll.age-2.11)/.36,0,1));
+    } else wave.visible=false;
+
+    if (!roll.reducedMotion) {
+      const blendIn=THREE.MathUtils.smoothstep(roll.age,0,.36);
+      const blendOut=1-THREE.MathUtils.smoothstep(roll.age,2.58,3.04);
+      const blend=blendIn*blendOut;
+      const jolt=roll.targets.length && sweep>0 ? Math.sin(roll.age*77)*.045 : 0;
+      closePosition.set(roll.x-3.15+jolt,4.9,z+6.85);
+      camera.position.copy(homePosition).lerp(closePosition,blend);
+      closeCamera.position.copy(closePosition);
+      closeCamera.lookAt(roll.x+.6,1.15,z-3.4);
+      camera.quaternion.copy(homeRotation).slerp(closeCamera.quaternion,blend);
+    }
+    return roll.age>=3.04;
+  }
+
+  return {hide, aim, start, tick};
 }

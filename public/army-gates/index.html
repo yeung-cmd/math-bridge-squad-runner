@@ -60,10 +60,11 @@
   #lvl.crossbow{background-image:url(art/crossbow.webp)}
   #hint{font-size:clamp(13px,3.5vw,22px)}
 </style>
-<link rel="stylesheet" href="./cannon.css">
+<link rel="stylesheet" href="./cannon.css?v=2">
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="cannonVignette" aria-hidden="true"></div>
 <div class="hud" id="logo">數學大軍<small id="lvlName">第一關</small></div>
 <div class="hud" id="lvl">武器：木弓</div>
 <div class="hud" id="score">正確 0 / 0</div>
@@ -139,7 +140,7 @@
 
 <script src="./vendor/three-r128.min.js"></script>
 <script src="./art.js"></script>
-<script src="./cannon.js"></script>
+<script src="./cannon.js?v=2"></script>
 <script>
 (() => {
 'use strict';
@@ -198,7 +199,7 @@ const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-10, 30
 
 const L = { X:-6.4, C:0, RX:6.4, SIDE_W:4.4, CEN_W:6.8, EXIT:-4, SQUAD_Z:4.2 };
 const lam = c => new THREE.MeshLambertMaterial({color:c});
-const cannon = createQuizCannon(scene);
+const cannon = createQuizCannon(scene,camera);
 const landscape = armyArt.landscape(scene,L);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const bossFigure = armyArt.marchingFigure('warlord',5.8,6.4);
@@ -522,6 +523,9 @@ function render(dt){
     const ne=Math.min(G.enemies.length,260);
     for(let i=0;i<ne;i++){ const e=G.enemies[i]; armyArt.soldier(camera,redArmy,i,e.x,e.z,Math.abs(Math.sin(G.t*8+e.ph))*0.08); }
     armyArt.flush(redArmy,ne);
+    const showBattleLabels = quiz?.phase!=='roll' || reducedMotion.matches;
+    G.boss.label.visible=G.armyLabel.visible=showBattleLabels;
+    for (const prop of G.props) prop.label.visible=showBattleLabels;
     const bossTravel = G.boss.z + 28;
     landscape.animate(camera, G.t, bossTravel, reducedMotion.matches);
     bossFigure.pose(camera, bossTravel * 10, reducedMotion.matches ? 0 : 1);
@@ -547,6 +551,7 @@ const quizButtons=[...document.querySelectorAll('#quizChoices button')];
 let quiz=null;
 function clearQuiz(){
   quiz=null; quizCard.hidden=true; cannon.hide();
+  document.body.classList.remove('cannon-rolling');
 }
 function offerQuiz(){
   if(!cfg.quizSeconds || !G.total || G.t<G.quizNext || dragging ||
@@ -554,7 +559,6 @@ function offerQuiz(){
   if(!cannon.aim(G)) { G.quizNext=G.t+.5; return; }
   const q=G.nextMath();
   quiz={q,phase:'question',remaining:cfg.quizSeconds,deadline:null,age:0};
-  cannon.show(G);
   $('hint').style.display='none';
   $('quizMath').textContent=q.expression+' = ?';
   $('quizClock').textContent=cfg.quizSeconds+' 秒';
@@ -570,14 +574,17 @@ function answerQuiz(value){
   if(quiz.deadline!==null && performance.now()>=quiz.deadline) value=null;
   const q=quiz.q, correct=value===q.answer;
   G.quizLog.push({expression:q.expression,answer:q.answer,chosen:value});
-  quiz.phase='result';quiz.age=0;
+  quiz.phase=correct?'roll':'result';quiz.age=0;
   $('quizMath').textContent=q.expression+' = '+q.answer;
   $('quizTimer').hidden=true; $('quizChoices').hidden=true;
   quizButtons.forEach(b=>b.disabled=true);
   $('quizClock').textContent='';
-  $('quizResult').textContent=correct?'答對了！大炮發射！':value===null?'時間到，看看正確答案。':'再試一次，看看正確答案。';
+  $('quizResult').textContent=correct?'答對了！大炮出動！':value===null?'時間到，看看正確答案。':'再試一次，看看正確答案。';
   if(correct){
-    cannon.aim(G);cannon.show(G);cannon.fire();beep(150,.22,'triangle',.085);
+    cannon.start(G,reducedMotion.matches);
+    document.body.classList.add('cannon-rolling');
+    beep(92,.55,'triangle',.14);
+    beep(184,.24,'triangle',.075);
   }else beep(300,.12,'sine');
 }
 quizButtons.forEach((b,i)=>b.addEventListener('click',()=>{if(quiz) answerQuiz(quiz.q.options[i]);}));
@@ -592,13 +599,24 @@ function quizTick(now,dt){
     if(quiz.remaining===0) answerQuiz(null);
     return;
   }
-  quiz.age+=dt;
-  cannon.tick(dt,G,(at,count)=>{
-    burst(at.x,1,at.z,0x86ffef,32,8);
-    floatText('擊退 '+count+' 名敵兵',at.x,2.1,at.z,{h:1.25,color:'#fff39a',life:1.05});
-    $('quizResult').textContent='擊退 '+count+' 名敵兵';
-  });
-  if(quiz.age>=1.35){clearQuiz();G.quizNext=G.t+R(18,22);}
+  if(quiz.phase==='roll'){
+    const done=cannon.tick(dt,G,(enemy,count)=>{
+      burst(enemy.x,.8,enemy.z,0xffe18e,reducedMotion.matches?5:15,6);
+      if(count===1 || count%4===0) {
+        burst(enemy.x,1,enemy.z,0x86ffef,reducedMotion.matches?4:12,8);
+        beep(125+count*6,.16,'triangle',.095);
+      }
+      $('quizResult').textContent='擊退 '+count+' 名敵兵';
+    },(x,z)=>{
+      if(!reducedMotion.matches) burst(x,.24,z,0xe6c491,6,2.5);
+    });
+    if(!done) return;
+  }else{
+    quiz.age+=dt;
+    if(quiz.age<1.35) return;
+  }
+  clearQuiz();
+  G.quizNext=G.t+R(18,22);
 }
 function reviewQuiz(){
   $('quizReview').hidden=!cfg.quizSeconds;
@@ -614,7 +632,7 @@ let last=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
   if (G && running && !paused && !G.over) {
-    step(dt);
+    if(quiz?.phase!=='roll') step(dt);
     if(running) quizTick(now,dt);
   }
   render((running&&!paused)?dt:0);
