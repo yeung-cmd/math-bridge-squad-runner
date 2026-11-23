@@ -10,3 +10,21 @@ html,body{touch-action:auto}
 #quizChoices button{flex:1;min-height:44px;background:#e8fffd;border:2px solid #55bdb5;border-radius:11px;color:#10304b;line-height:1.2;font-family:inherit;font-weight:900;font-size:24px;cursor:pointer;touch-action:manipulation}
 #quizResult{font-weight:700;color:#ffe39d}
 #quizReview{margin-top:12px;padding:8px;border:1px solid #d9c499;border-radius:12px;text-align:left}#quizReview h2{font-size:17px;margin:0;color:#214c71}#quizReview p{margin:4px 0}#quizErrors{padding-left:20px;margin:0}
+
+#cannonVignette {
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,transparent 48%,#0a1a3d8c 100%);
+  opacity:0;
+  transition:opacity .24s ease;
+}
+.cannon-rolling #cannonVignette { opacity:1; }
+@media (prefers-reduced-motion:no-preference) {
+  .cannon-rolling #logo,.cannon-rolling #lvl,.cannon-rolling #score { visibility:hidden; }
+}
+.cannon-rolling #quizCard { border-color:#ffe393;box-shadow:0 0 22px #efbf625e; }
+.cannon-rolling #quizResult { font-size:clamp(17px,4.5vw,23px); }
+@media (prefers-reduced-motion:reduce) {
+  #cannonVignette { display:none; }
+}
