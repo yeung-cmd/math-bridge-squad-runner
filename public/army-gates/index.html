@@ -60,7 +60,7 @@
   #lvl.crossbow{background-image:url(art/crossbow.webp)}
   #hint{font-size:clamp(13px,3.5vw,22px)}
 </style>
-<link rel="stylesheet" href="./cannon.css?v=2">
+<link rel="stylesheet" href="./cannon.css?v=3">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -108,7 +108,7 @@
         <button class="opt on" data-v="5">5 秒</button>
         <button class="opt" data-v="3">3 秒</button>
       </div>
-      <p class="note">先選一道門。大炮出題時，限時答對即可擊退一批敵兵。</p>
+      <p class="note">先選一道門。大炮出題時，限時答對，炮台便會一炮擊退場上約一半敵兵。</p>
     </div>
     <button class="big" id="startBtn">開始遊戲</button>
   </div>
@@ -140,7 +140,7 @@
 
 <script src="./vendor/three-r128.min.js"></script>
 <script src="./art.js"></script>
-<script src="./cannon.js?v=2"></script>
+<script src="./cannon.js?v=3"></script>
 <script>
 (() => {
 'use strict';
@@ -523,7 +523,7 @@ function render(dt){
     const ne=Math.min(G.enemies.length,260);
     for(let i=0;i<ne;i++){ const e=G.enemies[i]; armyArt.soldier(camera,redArmy,i,e.x,e.z,Math.abs(Math.sin(G.t*8+e.ph))*0.08); }
     armyArt.flush(redArmy,ne);
-    const showBattleLabels = quiz?.phase!=='roll' || reducedMotion.matches;
+    const showBattleLabels = quiz?.phase!=='shot' || reducedMotion.matches;
     G.boss.label.visible=G.armyLabel.visible=showBattleLabels;
     for (const prop of G.props) prop.label.visible=showBattleLabels;
     const bossTravel = G.boss.z + 28;
@@ -551,12 +551,11 @@ const quizButtons=[...document.querySelectorAll('#quizChoices button')];
 let quiz=null;
 function clearQuiz(){
   quiz=null; quizCard.hidden=true; cannon.hide();
-  document.body.classList.remove('cannon-rolling');
+  document.body.classList.remove('cannon-firing');
 }
 function offerQuiz(){
   if(!cfg.quizSeconds || !G.total || G.t<G.quizNext || dragging ||
       Math.abs(G.tx-G.sx)>.12 || G.t-G.lastGate<1.4 || G.enemies.length<3) return;
-  if(!cannon.aim(G)) { G.quizNext=G.t+.5; return; }
   const q=G.nextMath();
   quiz={q,phase:'question',remaining:cfg.quizSeconds,deadline:null,age:0};
   $('hint').style.display='none';
@@ -574,15 +573,15 @@ function answerQuiz(value){
   if(quiz.deadline!==null && performance.now()>=quiz.deadline) value=null;
   const q=quiz.q, correct=value===q.answer;
   G.quizLog.push({expression:q.expression,answer:q.answer,chosen:value});
-  quiz.phase=correct?'roll':'result';quiz.age=0;
+  quiz.phase=correct?'shot':'result';quiz.age=0;
   $('quizMath').textContent=q.expression+' = '+q.answer;
   $('quizTimer').hidden=true; $('quizChoices').hidden=true;
   quizButtons.forEach(b=>b.disabled=true);
   $('quizClock').textContent='';
-  $('quizResult').textContent=correct?'答對了！大炮出動！':value===null?'時間到，看看正確答案。':'再試一次，看看正確答案。';
+  $('quizResult').textContent=correct?'答對了！炮台蓄能！':value===null?'時間到，看看正確答案。':'再試一次，看看正確答案。';
   if(correct){
     cannon.start(G,reducedMotion.matches);
-    document.body.classList.add('cannon-rolling');
+    document.body.classList.add('cannon-firing');
     beep(92,.55,'triangle',.14);
     beep(184,.24,'triangle',.075);
   }else beep(300,.12,'sine');
@@ -599,16 +598,19 @@ function quizTick(now,dt){
     if(quiz.remaining===0) answerQuiz(null);
     return;
   }
-  if(quiz.phase==='roll'){
-    const done=cannon.tick(dt,G,(enemy,count)=>{
-      burst(enemy.x,.8,enemy.z,0xffe18e,reducedMotion.matches?5:15,6);
-      if(count===1 || count%4===0) {
-        burst(enemy.x,1,enemy.z,0x86ffef,reducedMotion.matches?4:12,8);
-        beep(125+count*6,.16,'triangle',.095);
+  if(quiz.phase==='shot'){
+    const done=cannon.tick(dt,G,origin=>{
+      $('quizResult').textContent='能量炮發射！';
+      burst(origin.x,origin.y,origin.z,0x9effff,18,4);
+      beep(100,.32,'triangle',.15);
+    },(center,removed)=>{
+      for(const enemy of removed){
+        burst(enemy.x,.85,enemy.z,0xffdc84,reducedMotion.matches?1:2,5);
       }
-      $('quizResult').textContent='擊退 '+count+' 名敵兵';
-    },(x,z)=>{
-      if(!reducedMotion.matches) burst(x,.24,z,0xe6c491,6,2.5);
+      burst(center.x,1.2,center.z,0x87fff5,reducedMotion.matches?12:45,10);
+      beep(68,.58,'sine',.23);
+      beep(142,.31,'triangle',.11);
+      $('quizResult').textContent='擊退 '+removed.length+' 名敵兵';
     });
     if(!done) return;
   }else{
@@ -632,7 +634,7 @@ let last=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
   if (G && running && !paused && !G.over) {
-    if(quiz?.phase!=='roll') step(dt);
+    if(quiz?.phase!=='shot') step(dt);
     if(running) quizTick(now,dt);
   }
   render((running&&!paused)?dt:0);
