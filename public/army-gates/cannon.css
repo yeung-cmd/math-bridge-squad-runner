@@ -19,12 +19,12 @@ html,body{touch-action:auto}
   opacity:0;
   transition:opacity .24s ease;
 }
-.cannon-rolling #cannonVignette { opacity:1; }
+.cannon-firing #cannonVignette { opacity:1; }
 @media (prefers-reduced-motion:no-preference) {
-  .cannon-rolling #logo,.cannon-rolling #lvl,.cannon-rolling #score { visibility:hidden; }
+  .cannon-firing #logo,.cannon-firing #lvl,.cannon-firing #score { visibility:hidden; }
 }
-.cannon-rolling #quizCard { border-color:#ffe393;box-shadow:0 0 22px #efbf625e; }
-.cannon-rolling #quizResult { font-size:clamp(17px,4.5vw,23px); }
+.cannon-firing #quizCard { border-color:#ffe393;box-shadow:0 0 22px #efbf625e; }
+.cannon-firing #quizResult { font-size:clamp(17px,4.5vw,23px); }
 @media (prefers-reduced-motion:reduce) {
   #cannonVignette { display:none; }
 }
