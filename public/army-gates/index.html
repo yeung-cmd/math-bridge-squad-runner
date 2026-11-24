@@ -158,10 +158,13 @@ document.querySelectorAll('.opts').forEach(g => {
   });
 });
 const SPEEDS = {
-  easy:{ life:3.5, horde:35,  refill:1.5, hordeSpeed:0.6, enemySpeed:1.1, bossSpeed:0.15, bossHP:2500, heal:40 },
-  mid: { life:2.5, horde:70,  refill:4,   hordeSpeed:0.8, enemySpeed:1.4, bossSpeed:0.16, bossHP:3200, heal:80 },
-  hard:{ life:2.0, horde:120, refill:9,   hordeSpeed:1.0, enemySpeed:1.8, bossSpeed:0.17, bossHP:4000, heal:120 }
+  easy:{ life:3.5, horde:60,  refill:3, hordeSpeed:0.6, enemySpeed:1.1, bossSpeed:0.15, bossHP:2500, heal:40 },
+  mid: { life:2.5, horde:105, refill:6,   hordeSpeed:0.8, enemySpeed:1.4, bossSpeed:0.16, bossHP:3200, heal:80 },
+  hard:{ life:2.0, horde:160, refill:12,   hordeSpeed:1.0, enemySpeed:1.8, bossSpeed:0.17, bossHP:4000, heal:120 }
 };
+const ENEMY_LIMIT=260;
+const FIRST_QUIZ_AT=6;
+const QUIZ_GAP=[8,11];
 const R = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 // ---------------- 音效 ----------------
 let actx=null;
@@ -235,7 +238,7 @@ function flushLabels(){ dirtyLabels.forEach(sp=>{ drawLabel(sp.userData.cv, sp.u
 // ---------------- 士兵（InstancedMesh） ----------------
 const dummy=new THREE.Object3D();
 const blueArmy=armyArt.army(scene,'archer',160,1.02,1.54);
-const redArmy=armyArt.army(scene,'raider',260,1.06,1.49);
+const redArmy=armyArt.army(scene,'raider',ENEMY_LIMIT,1.06,1.49);
 
 // ---------------- 箭矢 ----------------
 const MAXA=420;
@@ -325,7 +328,7 @@ function newGame(){
   const bossHP = S.bossHP;
   const startArmy = cfg.range*2;
   G={ S, t:0, army:startArmy, maxArmy:startArmy, sx:0, tx:0, level:0, volley:0, spawn:0, log:[], good:0, total:0,
-      quizNext:12, quizLog:[], lastGate:-10, nextMath:cannonQuestions(cfg.level,cfg.range),
+      quizNext:FIRST_QUIZ_AT, quizLog:[], lastGate:-10, nextMath:cannonQuestions(cfg.level,cfg.range),
       enemies:[], props:[], propT:6, slots:[], over:false, zone:'C',
       gates:{ L:{g:null,mesh:null,age:0,wait:0.8, born:0}, R:{g:null,mesh:null,age:0,wait:0.3, born:0} } };
   const bg=new THREE.Group(); bg.add(bossFigure.group); bg.position.set(0,0,-28); scene.add(bg);
@@ -333,7 +336,7 @@ function newGame(){
   G.boss={grp:bg,hp:bossHP,max:bossHP,label:bl,z:-28,flash:0};
   G.armyLabel=textSprite(String(startArmy),{size:110,h:1.6,minChars:4}); scene.add(G.armyLabel);
   for(let i=0;i<160;i++) G.slots.push({x:0,z:L.SQUAD_Z});
-  for(let i=0;i<S.horde;i++) G.enemies.push({x:-2.8+(i%6)*1.12+(Math.random()-.5)*0.3, z:-25.4+Math.floor(i/6)*0.6, ph:Math.random()*6, hp:1});
+  for(let i=0;i<S.horde;i++) G.enemies.push({x:-2.8+(i%6)*1.12+(Math.random()-.5)*0.3, z:-25.4+Math.floor(i/6)*0.42, ph:Math.random()*6, hp:1});
   document.getElementById('lvlName').textContent = cfg.level==='2' ? '第二關・加減乘' : '第一關・加減';
   updateHud();
 }
@@ -469,12 +472,24 @@ function step(dt){
     const zone = G.sx < -3.9 ? 'L' : G.sx > 3.9 ? 'R' : 'C';
     if (zone!==G.zone){ if (zone!=='C') chooseGate(zone); G.zone=zone; }
   }
-  // 敵軍大隊：首領前面長期維持一大群紅兵（似原作），被射少了就由首領身後補充
-  const target = Math.min(230, S.horde + G.t*0.6);
-  G.spawn += dt*S.refill;
-  let inLane=0; for (const e of G.enemies) if (e.z < L.EXIT) inLane++;
-  while (G.spawn>=1){ G.spawn-=1; if (inLane>=target || G.enemies.length>=255) { G.spawn=0; break; }
-    for (let k=0;k<6;k++){ G.enemies.push({x:-2.8+k*1.12+(Math.random()-.5)*0.3, z:G.boss.z+2.6+Math.random()*0.6, ph:Math.random()*6, hp:enemyHP()}); inLane++; } }
+  // 逐步補充橋上的敵兵，預留空間給已越過橋口的敵兵。
+  const target = Math.min(ENEMY_LIMIT-18, Math.floor(S.horde+G.t*0.85));
+  G.spawn+=dt*S.refill;
+  let inLane=0;
+  for(const enemy of G.enemies) if(enemy.z<L.EXIT) inLane++;
+  while(G.spawn>=1){
+    const waveSize=Math.min(6,target-inLane,ENEMY_LIMIT-G.enemies.length);
+    if(waveSize<=0){G.spawn=0;break;}
+    G.spawn--;
+    const firstColumn=R(0,6-waveSize);
+    for(let k=0;k<waveSize;k++){
+      G.enemies.push({
+        x:-2.8+(firstColumn+k)*1.12+(Math.random()-.5)*.3,
+        z:G.boss.z+2.6+Math.random()*2.5,ph:Math.random()*6,hp:enemyHP()
+      });
+    }
+    inLane+=waveSize;
+  }
   // 中路道具：炸藥桶（射爆清走附近敵兵）、寶箱（射爆加士兵）
   G.propT-=dt;
   if (G.propT<=0){ G.propT = R(9,14); spawnProp(Math.random()<0.5 ? 'barrel' : 'chest'); }
@@ -520,7 +535,7 @@ function render(dt){
     for(let i=0;i<shown;i++){ const s=G.slots[i]; const bob=Math.abs(Math.sin(G.t*9+i))*0.06;
       armyArt.soldier(camera,blueArmy,i,s.x,s.z,bob); }
     armyArt.flush(blueArmy,shown);
-    const ne=Math.min(G.enemies.length,260);
+    const ne=G.enemies.length;
     for(let i=0;i<ne;i++){ const e=G.enemies[i]; armyArt.soldier(camera,redArmy,i,e.x,e.z,Math.abs(Math.sin(G.t*8+e.ph))*0.08); }
     armyArt.flush(redArmy,ne);
     const showBattleLabels = quiz?.phase!=='shot' || reducedMotion.matches;
@@ -618,7 +633,7 @@ function quizTick(now,dt){
     if(quiz.age<1.35) return;
   }
   clearQuiz();
-  G.quizNext=G.t+R(18,22);
+  G.quizNext=G.t+R(...QUIZ_GAP);
 }
 function reviewQuiz(){
   $('quizReview').hidden=!cfg.quizSeconds;
