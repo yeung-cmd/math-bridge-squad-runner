@@ -60,24 +60,25 @@
   #lvl.crossbow{background-image:url(art/crossbow.webp)}
   #hint{font-size:clamp(13px,3.5vw,22px)}
 </style>
-<link rel="stylesheet" href="./cannon.css?v=4">
+<link rel="stylesheet" href="./cannon.css?v=5">
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="cannonVignette" aria-hidden="true"></div>
 <div id="cannonFlash" aria-hidden="true"></div>
-<div class="hud" id="logo">數學大軍<small id="lvlName">第一關</small></div>
+<div class="hud" id="logo">數學大軍<small id="lvlName">第一章・碧海橋頭</small></div>
 <div class="hud" id="lvl">武器：木弓</div>
 <div class="hud" id="score">正確 0 / 0</div>
 <button id="pauseBtn">❚❚</button>
 <div class="hud" id="hint">◀ 拖動軍隊到左／右，或直接點選門 ▶</div>
 <div class="hud" id="feedback"></div>
+<div id="stageBanner" role="status" aria-live="polite"></div>
 
 <section id="quizCard" aria-labelledby="quizHeading" hidden>
   <div class="quiz-top"><strong id="quizHeading">答題大炮</strong><span id="quizClock"></span></div>
   <progress id="quizTimer" aria-label="剩餘作答時間"></progress>
   <div id="quizMath" aria-live="polite"></div>
-  <div id="quizChoices"><button type="button"></button><button type="button"></button></div>
+  <div id="quizChoices"><button type="button"></button><button type="button"></button><button type="button"></button></div>
   <div id="quizResult" role="status"></div>
 </section>
 
@@ -85,11 +86,20 @@
   <div class="panel">
     <a class="hub-link" href="../">← 返回遊戲選擇</a>
     <h1>數學大軍闖關</h1>
-    <p>左右兩邊會出現「＋」「－」「×」門。<br>看看自己有多少士兵，選出令軍隊最多的一道門！<br>沒有選的門很快便會消失。<br>中路射爆炸藥桶可炸走敵兵，射爆寶箱有援軍。<br>選錯門，首領會回復體力！</p>
-    <div class="row"><div class="lab">關卡</div>
-      <div class="opts" data-k="level">
-        <button class="opt on" data-v="1">第一關<span class="lvl-desc">加減混合</span></button>
-        <button class="opt" data-v="2">第二關<span class="lvl-desc">加減乘混合</span></button>
+    <p>左右兩邊會出現「＋」「－」「×」門，選出令軍隊最多的一道！<br>中路射爆炸藥桶可炸走敵兵，射爆寶箱有援軍。<br>選錯門，首領會回復體力！</p>
+    <div class="medal-shelf" id="medalShelf">
+      <span id="medalSummary">通關勳章：0 / 3</span>
+      <span class="medal-icons">
+        <span class="medal-pill" data-medal="1">🥉 一章</span>
+        <span class="medal-pill" data-medal="2">🥈 二章</span>
+        <span class="medal-pill" data-medal="3">👑 三章</span>
+      </span>
+    </div>
+    <div class="row"><div class="lab">故事章節</div>
+      <div class="opts opts-chapters" data-k="level">
+        <button class="opt on" data-v="1"><span class="medal" aria-hidden="true">🥉</span>第一章<span class="lvl-desc">碧海橋頭・加減</span></button>
+        <button class="opt" data-v="2"><span class="medal" aria-hidden="true">🥈</span>第二章<span class="lvl-desc">烽火圍城・巨人</span></button>
+        <button class="opt" data-v="3"><span class="medal" aria-hidden="true">👑</span>第三章<span class="lvl-desc">暗夜魔王・雙首領</span></button>
       </div></div>
     <div class="row"><div class="lab">門上的數字</div>
       <div class="opts" data-k="range">
@@ -115,6 +125,22 @@
   </div>
 </div>
 
+<div class="overlay" id="storyOverlay" style="display:none">
+  <div class="panel story-panel">
+    <span class="story-badge" id="storyBadge">第一章</span>
+    <h2 class="story-title" id="storyTitle">碧海橋頭</h2>
+    <div class="story-cast">
+      <img id="storyHero" src="./art/commander.webp" alt="藍甲指揮官">
+      <span class="story-vs">VS</span>
+      <img id="storyEnemy" src="./art/warlord.webp" alt="敵軍首領">
+    </div>
+    <p class="story-text" id="storyText"></p>
+    <p class="story-tip" id="storyTip"></p>
+    <button class="big" id="storyGoBtn">立即出擊！</button>
+    <button class="story-sub" id="storyBackBtn">返回選擇章節</button>
+  </div>
+</div>
+
 <div class="overlay" id="pauseMenu" style="display:none">
   <div class="panel">
     <h1>暫停</h1>
@@ -126,6 +152,7 @@
 <div class="overlay" id="endMenu" style="display:none">
   <div class="panel">
     <h1 id="endTitle">勝利！</h1>
+    <div id="endMedal" hidden></div>
     <div class="stat">
       <div><b id="stMax">0</b><span>最多士兵</span></div>
       <div><b id="stAcc">0</b><span>正確選擇</span></div>
@@ -134,30 +161,108 @@
     <div class="lab" style="text-align:left;font-weight:900;color:#1c4f9c">今局的選擇</div>
     <div id="log"></div>
     <section id="quizReview" hidden><h2>即時問答</h2><p id="quizScore"></p><ul id="quizErrors"></ul></section>
+    <button class="big blue" id="nextChapterBtn" hidden>進入下一章</button>
     <button class="big blue" id="againBtn">再玩一次</button>
     <button class="big" id="homeBtn">返回主頁</button>
   </div>
 </div>
 
 <script src="./vendor/three-r128.min.js"></script>
-<script src="./art.js"></script>
-<script src="./cannon.js?v=4"></script>
+<script src="./art.js?v=2"></script>
+<script src="./cannon.js?v=5"></script>
 <script>
 (() => {
 'use strict';
 // ---------------- 設定 ----------------
+const CHAPTERS = {
+  '1': {
+    badge: '第一章・晴天守橋',
+    title: '碧海橋頭',
+    hudName: '第一章・碧海橋頭',
+    story: '紅角先鋒突襲碧海石橋！指揮官，請帶領弓箭隊穿過最有利的數學大門，壯大軍團擊退先鋒戰將！',
+    tip: '戰術重點：左右比較加減門，答對大炮可展開機關掃射擊退一半敵兵！',
+    enemyImg: './art/warlord.webp',
+    shieldRate: 0,
+    giantActive: false,
+    giantGap: 11,
+    dualBoss: false,
+    quizChoices: 2,
+    bossScale: 1.0,
+    medalName: '🥉 第一章碧海銅盾勳章'
+  },
+  '2': {
+    badge: '第二章・黃昏圍城',
+    title: '烽火圍城',
+    hudName: '第二章・烽火圍城',
+    story: '黃昏烽火燃起！敵方派出左右護衛巨人與重裝盾兵壓境，隨時從橋側召喚增援包抄我軍！',
+    tip: '戰術重點：盾兵較耐打；答對大炮可掃射敵軍並壓制雙巨人 7 秒！',
+    enemyImg: './art/giant.webp',
+    shieldRate: 0.25,
+    giantActive: true,
+    giantGap: 10.5,
+    dualBoss: false,
+    quizChoices: 2,
+    bossScale: 1.2,
+    medalName: '🥈 第二章烽火銀劍勳章'
+  },
+  '3': {
+    badge: '第三章・暗夜終戰',
+    title: '暗夜魔王',
+    hudName: '第三章・暗夜魔王',
+    story: '黑夜雷電交加，城堡傳送門即將開啟！打倒先鋒魔將後，更強大的暗夜巨王將從後方破門殺出！',
+    tip: '戰術重點：留意止損雙減門與複合乘法門；答題大炮升級為三選一！',
+    enemyImg: './art/overlord.webp',
+    shieldRate: 0.35,
+    giantActive: true,
+    giantGap: 9.2,
+    dualBoss: true,
+    quizChoices: 3,
+    bossScale: 1.3,
+    medalName: '👑 第三章暗夜金冠勳章'
+  }
+};
 const cfg = { level:'1', range:20, speed:'easy', quizSeconds:5 };
 try { const s = JSON.parse(localStorage.getItem('armyMathCfg2')||'null'); if (s) Object.assign(cfg, s); } catch(e){}
+if (!['1','2','3'].includes(String(cfg.level))) cfg.level='1';
+cfg.level = String(cfg.level);
 if (![0,3,5].includes(cfg.quizSeconds)) cfg.quizSeconds=5;
 if (!['easy','mid','hard'].includes(cfg.speed)) cfg.speed='easy';
-document.querySelectorAll('.opts').forEach(g => {
-  const k = g.dataset.k;
-  g.querySelectorAll('.opt').forEach(b => {
-    b.classList.toggle('on', String(cfg[k]) === b.dataset.v);
-    b.onclick = () => { g.querySelectorAll('.opt').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-      cfg[k] = (k==='range' || k==='quizSeconds') ? +b.dataset.v : b.dataset.v; };
+function loadMedals(){
+  try { const m=JSON.parse(localStorage.getItem('armyMathMedals1')||'{}'); return m && typeof m==='object' ? m : {}; }
+  catch(e){ return {}; }
+}
+let medals = loadMedals();
+function saveMedal(lv){
+  medals[lv] = true;
+  try { localStorage.setItem('armyMathMedals1', JSON.stringify(medals)); } catch(e){}
+  renderMedals();
+}
+function renderMedals(){
+  const count=['1','2','3'].filter(k=>medals[k]).length;
+  const summary=document.getElementById('medalSummary');
+  if (summary) {
+    if (count===3) summary.innerHTML='<span class="medal-crown">👑 王國守護者（3 / 3）</span>';
+    else summary.textContent=`通關勳章：${count} / 3`;
+  }
+  document.querySelectorAll('.medal-pill').forEach(el=>{
+    el.classList.toggle('earned', !!medals[el.dataset.medal]);
   });
-});
+  document.querySelectorAll('.opts-chapters .opt').forEach(btn=>{
+    btn.classList.toggle('has-medal', !!medals[btn.dataset.v]);
+  });
+}
+function syncOptionButtons(){
+  document.querySelectorAll('.opts').forEach(g => {
+    const k = g.dataset.k;
+    g.querySelectorAll('.opt').forEach(b => {
+      b.classList.toggle('on', String(cfg[k]) === b.dataset.v);
+      b.onclick = () => { g.querySelectorAll('.opt').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+        cfg[k] = (k==='range' || k==='quizSeconds') ? +b.dataset.v : b.dataset.v; };
+    });
+  });
+}
+syncOptionButtons();
+renderMedals();
 const SPEEDS = {
   easy:{ life:3.5, horde:60,  refill:3, hordeSpeed:0.6, enemySpeed:1.1, bossSpeed:0.15, bossHP:2500, heal:40 },
   mid: { life:2.5, horde:105, refill:6,   hordeSpeed:0.8, enemySpeed:1.4, bossSpeed:0.16, bossHP:3200, heal:80 },
@@ -233,6 +338,19 @@ function playCannonCooldown(){
   g.gain.exponentialRampToValueAtTime(0.0001,now+0.36);
   o.connect(g); g.connect(actx.destination); o.start(now); o.stop(now+0.37);
 }
+function playBossEntrance(){
+  if(!actx) return;
+  const now=actx.currentTime;
+  [110, 146.8, 164.8, 220].forEach((freq,idx)=>{
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type=idx===0?'sawtooth':'triangle';
+    o.frequency.setValueAtTime(freq,now);
+    o.frequency.exponentialRampToValueAtTime(freq*0.72,now+0.75);
+    g.gain.setValueAtTime(idx===0?0.09:0.055,now);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+0.78);
+    o.connect(g); g.connect(actx.destination); o.start(now); o.stop(now+0.8);
+  });
+}
 
 // ---------------- Three.js 場景 ----------------
 const canvas = document.getElementById('c');
@@ -255,15 +373,16 @@ function resize(){
 }
 addEventListener('resize', resize); resize();
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x6a5a48, 0.62));
+const hemi = new THREE.HemisphereLight(0xffffff, 0x6a5a48, 0.62); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-10, 30, 15); scene.add(sun);
 
 const L = { X:-6.4, C:0, RX:6.4, SIDE_W:4.4, CEN_W:6.8, EXIT:-4, SQUAD_Z:4.2 };
 const lam = c => new THREE.MeshLambertMaterial({color:c});
 const cannon = createQuizCannon(scene,camera);
-const landscape = armyArt.landscape(scene,L);
+const landscape = armyArt.landscape(scene,L,{hemi,sun});
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const bossFigure = armyArt.marchingFigure('warlord',5.8,6.4);
+const warlordFigure = armyArt.marchingFigure('warlord',5.8,6.4);
+const overlordFigure = armyArt.marchingFigure('overlord',6.3,7.0);
 
 // ---------------- 文字精靈 ----------------
 function drawLabel(cv, text, o){
@@ -297,6 +416,7 @@ function flushLabels(){ dirtyLabels.forEach(sp=>{ drawLabel(sp.userData.cv, sp.u
 const dummy=new THREE.Object3D();
 const blueArmy=armyArt.army(scene,'archer',160,1.02,1.54);
 const redArmy=armyArt.army(scene,'raider',ENEMY_LIMIT,1.06,1.49);
+const shieldArmy=armyArt.army(scene,'shield_raider',120,1.28,1.68);
 
 // ---------------- 箭矢 ----------------
 const MAXA=420;
@@ -341,7 +461,21 @@ function genGate(other){
   const groupGate = (sign) => { let a=R(2,fmax), b=R(2,fmax); if (M<=20) while(a*b>M*2){ a=R(2,fmax); b=R(2,fmax); }
     return {op:sign, n:a*b, label:`${sign}${a}×${b}`}; };
   let g;
-  if (lv==='2'){
+  if (lv==='3'){
+    const r=Math.random();
+    const mulOK = army <= 50;
+    if (!other && army>=18 && r<0.28) {
+      g = Math.random()<0.4 ? groupGate('−') : minus();
+    } else if (other && other.op==='−' && army>=18 && r<0.38) {
+      g = Math.random()<0.4 ? groupGate('−') : minus();
+    } else if (other && (other.op==='×' || other.label)) {
+      g = r<0.45 ? groupGate('+') : (r<0.75 ? plus() : minus());
+    } else if (r<0.52) {
+      g = mulOK && Math.random()<0.5 ? timesArmy() : groupGate(Math.random()<0.72?'+':'−');
+    } else {
+      g = r<0.78 ? plus() : minus();
+    }
+  } else if (lv==='2'){
     const r=Math.random();
     const mulOK = army <= 50;
     if (other && (other.op==='×' || other.label)) g = r<0.55 ? plus() : minus();
@@ -352,7 +486,10 @@ function genGate(other){
     else if (other && other.op==='−') g = Math.random()<0.75 ? plus() : minus();
     else g = Math.random()<0.6 ? plus() : minus();
   }
-  if (other && apply(army,other)===apply(army,g) && !g.label) g.n = g.op==='×' ? (g.n===2?3:2) : (g.n%M)+1;
+  if (other && apply(army,other)===apply(army,g)) {
+    if (g.op==='×') g.n = g.n===2 ? 3 : 2;
+    else { g.n = (g.n%M)+1; delete g.label; }
+  }
   return g;
 }
 const GATE_COL = { '+':[0x2f8cf0,0x6db8ff,'#103f86'], 'g':[0x8a4fe0,0xc4a0ff,'#3d1680'], '−':[0xe0413a,0xff8a80,'#7a0f0a'], '×':[0x8a4fe0,0xc4a0ff,'#3d1680'] };
@@ -377,25 +514,72 @@ let G=null, running=false, paused=false;
 const SIDES={L:{x:-6.4}, R:{x:6.4}};
 const GATE_Z = -4.2;
 
+function enemyHP(kind){ return kind==='shield' ? 3 : 1; }
+function pushEnemy(x,z,kind){
+  if (G.enemies.length>=ENEMY_LIMIT) return;
+  const k = kind || (Math.random() < G.chapter.shieldRate ? 'shield' : 'raider');
+  G.enemies.push({x, z, ph:Math.random()*6, hp:enemyHP(k), kind:k, flash:0});
+}
+let bannerTimer=null;
+function showBanner(text, ms=2400){
+  const el=document.getElementById('stageBanner');
+  if(!el) return;
+  el.textContent=text;
+  el.classList.add('show');
+  clearTimeout(bannerTimer);
+  bannerTimer=setTimeout(()=>el.classList.remove('show'), ms);
+}
+function summonOverlord(){
+  G.bossPhase=2;
+  burst(0,3.5,G.boss.z,0xff9a3a,55,10);
+  burst(0,4.5,G.boss.z,0xb066ff,35,8);
+  G.boss.grp.remove(G.boss.fig.group);
+  G.boss.grp.add(overlordFigure.group);
+  G.boss.fig=overlordFigure;
+  const p2HP=Math.round(G.S.bossHP*G.chapter.bossScale*0.70);
+  G.boss.hp=p2HP; G.boss.max=p2HP;
+  G.boss.z=-26.5; G.boss.grp.position.z=-26.5; G.boss.flash=0.25;
+  G.boss.label.position.set(0,7.5,0);
+  setSpriteText(G.boss.label,String(p2HP));
+  landscape.triggerPortalFlash(1.8);
+  playBossEntrance();
+  showBanner('先鋒擊破！暗夜巨王衝出城門！', 2800);
+  document.getElementById('lvlName').textContent='第三章・暗夜巨王（終戰）';
+  for(let i=0;i<6;i++){
+    pushEnemy(-2.6+i*1.04+(Math.random()-.5)*0.2, -23.5+Math.random()*1.4, i<3?'shield':'raider');
+  }
+}
+
 function clearGate(side){ const s=G.gates[side]; if(s.mesh){ scene.remove(s.mesh.grp); s.mesh=null; } s.g=null; }
 function newGame(){
   clearQuiz(); dragging=false;
+  clearTimeout(bannerTimer);
+  const bannerEl=document.getElementById('stageBanner'); if(bannerEl) bannerEl.classList.remove('show');
   if (G){ clearGate('L'); clearGate('R'); G.props.forEach(p=>scene.remove(p.grp)); scene.remove(G.boss.grp); scene.remove(G.armyLabel);
     floats.forEach(f=>scene.remove(f.sp)); floats.length=0; }
+  const chapter = CHAPTERS[cfg.level] || CHAPTERS['1'];
+  landscape.setTheme(cfg.level);
+  landscape.reset();
   const S=SPEEDS[cfg.speed];
-  const bossHP = S.bossHP;
+  const totalBossHP = Math.round(S.bossHP * chapter.bossScale);
+  const bossHP = chapter.dualBoss ? Math.round(totalBossHP * 0.40) : totalBossHP;
   const startArmy = cfg.range*2;
-  G={ S, t:0, army:startArmy, maxArmy:startArmy, sx:0, tx:0, level:0, volley:0, spawn:0, log:[], good:0, total:0,
-      quizNext:FIRST_QUIZ_AT, quizLog:[], lastGate:-10, nextMath:cannonQuestions(cfg.level,cfg.range),
+  G={ S, chapter, bossPhase:1, t:0, army:startArmy, maxArmy:startArmy, sx:0, tx:0, level:0, volley:0, spawn:0, log:[], good:0, total:0,
+      quizNext:FIRST_QUIZ_AT, quizLog:[], lastGate:-10, nextMath:cannonQuestions(cfg.level,cfg.range,chapter.quizChoices),
+      giantNext:chapter.giantActive?8.5:99999, giantSide:0, giantStun:0,
       enemies:[], props:[], propT:6, slots:[], over:false, zone:'C',
       gates:{ L:{g:null,mesh:null,age:0,wait:0.8, born:0}, R:{g:null,mesh:null,age:0,wait:0.3, born:0} } };
-  const bg=new THREE.Group(); bg.add(bossFigure.group); bg.position.set(0,0,-28); scene.add(bg);
+  const bg=new THREE.Group();
+  overlordFigure.group.parent && overlordFigure.group.parent.remove(overlordFigure.group);
+  warlordFigure.group.parent && warlordFigure.group.parent.remove(warlordFigure.group);
+  bg.add(warlordFigure.group);
+  bg.position.set(0,0,-28); scene.add(bg);
   const bl=textSprite(String(bossHP),{size:96,h:1.8,minChars:4}); bl.position.set(0,7.2,0); bg.add(bl);
-  G.boss={grp:bg,hp:bossHP,max:bossHP,label:bl,z:-28,flash:0};
+  G.boss={grp:bg,fig:warlordFigure,hp:bossHP,max:bossHP,label:bl,z:-28,flash:0};
   G.armyLabel=textSprite(String(startArmy),{size:110,h:1.6,minChars:4}); scene.add(G.armyLabel);
   for(let i=0;i<160;i++) G.slots.push({x:0,z:L.SQUAD_Z});
-  for(let i=0;i<S.horde;i++) G.enemies.push({x:-2.8+(i%6)*1.12+(Math.random()-.5)*0.3, z:-25.4+Math.floor(i/6)*0.42, ph:Math.random()*6, hp:1});
-  document.getElementById('lvlName').textContent = cfg.level==='2' ? '第二關・加減乘' : '第一關・加減';
+  for(let i=0;i<S.horde;i++) pushEnemy(-2.8+(i%6)*1.12+(Math.random()-.5)*0.3, -25.4+Math.floor(i/6)*0.42);
+  document.getElementById('lvlName').textContent = chapter.hudName;
   updateHud();
 }
 function updateHud(){
@@ -443,7 +627,6 @@ function expireGate(side){
   const s=G.gates[side]; burst(SIDES[side].x,2,s.z,0xaaaaaa,8,3); clearGate(side); s.wait=0.35;
 }
 
-function enemyHP(){ return 1; }
 function spawnProp(type){
   const grp=new THREE.Group(); let hp;
   if (type==='barrel'){
@@ -466,6 +649,7 @@ function breakProp(p){
     G.boss.hp -= 40; setSpriteText(G.boss.label,String(Math.max(0,Math.ceil(G.boss.hp))));
     floatText(`轟！ 炸走 ${n} 個敵兵`,0,4,p.z,{size:96,h:1.4,color:'#ffb020',stroke:'#5a1a00',life:1.6});
     beep(90,0.35,'sawtooth',0.08);
+    if (G.boss.hp<=0){ if (G.chapter.dualBoss && G.bossPhase===1) summonOverlord(); else endGame(true); }
   } else {
     const bonus = Math.round(cfg.range/2);
     G.army=Math.min(999,G.army+bonus); G.maxArmy=Math.max(G.maxArmy,G.army);
@@ -541,12 +725,26 @@ function step(dt){
     G.spawn--;
     const firstColumn=R(0,6-waveSize);
     for(let k=0;k<waveSize;k++){
-      G.enemies.push({
-        x:-2.8+(firstColumn+k)*1.12+(Math.random()-.5)*.3,
-        z:G.boss.z+2.6+Math.random()*2.5,ph:Math.random()*6,hp:enemyHP()
-      });
+      pushEnemy(-2.8+(firstColumn+k)*1.12+(Math.random()-.5)*.3, G.boss.z+2.6+Math.random()*2.5);
     }
     inLane+=waveSize;
+  }
+  // 第二／三章：左右兩側巨人召喚增援（被機關炮壓制期間暫停）
+  if (!protectedTime && G.chapter.giantActive){
+    if (G.giantStun > 0) {
+      G.giantStun = Math.max(0, G.giantStun - dt);
+    } else if (G.t >= G.giantNext) {
+      G.giantNext = G.t + G.chapter.giantGap;
+      const sideIdx = G.giantSide; G.giantSide = 1 - G.giantSide;
+      const gp = landscape.getGiantPos(sideIdx);
+      landscape.pulseGiant(sideIdx, 0xd88cff);
+      const spawnZ = Math.max(-24, Math.min(L.EXIT - 3, gp.z + 1.5));
+      for (let k=0; k<4; k++) {
+        pushEnemy((sideIdx===0?-2.2:1.2)+k*0.42+(Math.random()-.5)*0.25, spawnZ+Math.random()*1.2, k<2?'shield':'raider');
+      }
+      floatText('巨人召喚援軍！', sideIdx===0?-3.0:3.0, 4.8, Math.max(-20, gp.z), {size:96,h:1.35,color:'#e5b8ff',stroke:'#3a0e68',life:1.5});
+      beep(310,0.16,'triangle',0.06);
+    }
   }
   // 中路道具：炸藥桶（射爆清走附近敵兵）、寶箱（射爆加士兵）
   G.propT-=dt;
@@ -557,11 +755,12 @@ function step(dt){
   G.boss.z += S.bossSpeed*dt; G.boss.grp.position.z=G.boss.z; G.boss.grp.rotation.y=Math.sin(G.t*1.5)*0.08;
   const rad=squadRadius();
   for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i];
-    if (e.z < L.EXIT) { e.z += S.hordeSpeed*dt*(e.z > G.boss.z+12 ? 1.6 : 1); e.x=Math.max(-3,Math.min(3,e.x)); }
-    else { e.z += S.enemySpeed*dt*0.7; }
+    const spdScale = e.kind==='shield' ? 0.85 : 1;
+    if (e.z < L.EXIT) { e.z += S.hordeSpeed*spdScale*dt*(e.z > G.boss.z+12 ? 1.6 : 1); e.x=Math.max(-3,Math.min(3,e.x)); }
+    else { e.z += S.enemySpeed*spdScale*dt*0.7; }
     if (e.z < L.EXIT) {}
     else { const dx=G.sx-e.x, dz=L.SQUAD_Z-e.z, d=Math.hypot(dx,dz)||1;
-      e.x+=dx/d*S.enemySpeed*dt*0.9; e.z+=dz/d*S.enemySpeed*dt*0.3;
+      e.x+=dx/d*S.enemySpeed*spdScale*dt*0.9; e.z+=dz/d*S.enemySpeed*spdScale*dt*0.3;
       if (!protectedTime && d < rad+0.3){ G.enemies.splice(i,1); G.army-=1; burst(e.x,0.8,e.z,0xffffff,6,3); beep(180,0.06,'sawtooth',0.03); continue; } }
     if (e.z > L.SQUAD_Z+6) G.enemies.splice(i,1);
   }
@@ -577,11 +776,17 @@ function step(dt){
         setSpriteText(p.label,String(Math.max(0,Math.ceil(p.hp)))); if (p.hp<=0) breakProp(p); break; } }
     if (hitP) continue;
     let hitE=-1;
-    for (let i=0;i<G.enemies.length;i++){ const e=G.enemies[i]; if (Math.abs(e.x-a.x)<0.42 && Math.abs(e.z-a.z)<0.6){ hitE=i; break; } }
-    if (hitE>=0){ const e=G.enemies[hitE]; a.on=false; e.hp-=dmg; if (e.hp<=0){ G.enemies.splice(hitE,1); burst(e.x,0.8,e.z,0xffe066,5,3); } continue; }
+    for (let i=0;i<G.enemies.length;i++){ const e=G.enemies[i]; if (Math.abs(e.x-a.x)<0.46 && Math.abs(e.z-a.z)<0.65){ hitE=i; break; } }
+    if (hitE>=0){ const e=G.enemies[hitE]; a.on=false; e.hp-=dmg;
+      if (e.hp<=0){ G.enemies.splice(hitE,1); burst(e.x,0.8,e.z,e.kind==='shield'?0x9ec8ff:0xffe066,6,3.5); }
+      else if (e.kind==='shield'){ burst(e.x,0.95,e.z,0xcbe7ff,2,2.5); }
+      continue; }
     if (Math.abs(a.x)<2.6 && a.z < bossZ+1.2){ a.on=false; G.boss.hp-=dmg; G.boss.flash=0.06;
       setSpriteText(G.boss.label,String(Math.max(0,Math.ceil(G.boss.hp))));
-      if (G.boss.hp<=0) return endGame(true); }
+      if (G.boss.hp<=0) {
+        if (G.chapter.dualBoss && G.bossPhase===1) summonOverlord();
+        else return endGame(true);
+      } }
   }
   if (G.army<=0){ G.army=0; return endGame(false); }
   if (G.boss.z > L.EXIT-1.5) return endGame(false);
@@ -593,18 +798,24 @@ function render(dt){
     for(let i=0;i<shown;i++){ const s=G.slots[i]; const bob=Math.abs(Math.sin(G.t*9+i))*0.06;
       armyArt.soldier(camera,blueArmy,i,s.x,s.z,bob); }
     armyArt.flush(blueArmy,shown);
-    const ne=G.enemies.length;
-    for(let i=0;i<ne;i++){ const e=G.enemies[i]; armyArt.soldier(camera,redArmy,i,e.x,e.z,Math.abs(Math.sin(G.t*8+e.ph))*0.08); }
-    armyArt.flush(redArmy,ne);
+    let nr=0, ns=0;
+    for(let i=0;i<G.enemies.length;i++){
+      const e=G.enemies[i];
+      const bob=Math.abs(Math.sin(G.t*8+e.ph))*0.08;
+      if (e.kind==='shield' && ns<120) armyArt.soldier(camera,shieldArmy,ns++,e.x,e.z,bob*0.85);
+      else if (nr<ENEMY_LIMIT) armyArt.soldier(camera,redArmy,nr++,e.x,e.z,bob);
+    }
+    armyArt.flush(redArmy,nr);
+    armyArt.flush(shieldArmy,ns);
     const showBattleLabels = quiz?.phase!=='shot' || reducedMotion.matches;
     G.boss.label.visible=G.armyLabel.visible=showBattleLabels;
     for (const prop of G.props) prop.label.visible=showBattleLabels;
     const bossTravel = G.boss.z + 28;
-    landscape.animate(camera, G.t, bossTravel, reducedMotion.matches);
-    bossFigure.pose(camera, bossTravel * 10, reducedMotion.matches ? 0 : 1);
+    landscape.animate(camera, G.t, bossTravel, reducedMotion.matches, dt);
+    G.boss.fig.pose(camera, bossTravel * 10, reducedMotion.matches ? 0 : 1);
     setSpriteText(G.armyLabel,String(G.army));
     G.armyLabel.position.set(G.sx, 2.4+squadRadius()*0.2, L.SQUAD_Z-squadRadius()-0.5);
-    bossFigure.body.material.color.setHex(G.boss.flash>0?0xffc6a1:0xffffff); G.boss.flash-=dt;
+    G.boss.fig.body.material.color.setHex(G.boss.flash>0?0xffc6a1:0xffffff); G.boss.flash-=dt;
     for (const side of ['L','R']){ const s=G.gates[side]; if(s.mesh) s.mesh.lab.position.y=2.1+Math.sin(G.t*5)*0.06; }
   }
   let ai=0; for (const a of arrows){ if(!a.on) continue; dummy.position.set(a.x,a.y,a.z); dummy.rotation.set(0,0,0); dummy.updateMatrix(); arrowMesh.setMatrixAt(ai++,dummy.matrix); }
@@ -637,7 +848,11 @@ function offerQuiz(){
   $('quizTimer').max=cfg.quizSeconds; $('quizTimer').value=cfg.quizSeconds;
   $('quizTimer').hidden=false; $('quizResult').textContent='';
   $('quizChoices').hidden=false;
-  quizButtons.forEach((b,i)=>{b.textContent=q.options[i];b.disabled=false;});
+  quizButtons.forEach((b,i)=>{
+    const has=i<q.options.length;
+    b.hidden=!has;
+    if(has){ b.textContent=q.options[i]; b.disabled=false; }
+  });
   quizCard.hidden=false;
   beep(660,.12,'sine');
 }
@@ -656,6 +871,11 @@ function answerQuiz(value){
     cannon.start(G,reducedMotion.matches);
     document.body.classList.add('cannon-firing');
     playCannonSpinUp();
+    if(G.chapter.giantActive){
+      G.giantStun=7;
+      landscape.setGiantStun(7);
+      floatText('雙巨人遭到壓制！',0,5.2,-16,{size:96,h:1.4,color:'#9efffa',stroke:'#0c3f58',life:1.6});
+    }
   }else beep(300,.12,'sine');
 }
 quizButtons.forEach((b,i)=>b.addEventListener('click',()=>{if(quiz) answerQuiz(quiz.q.options[i]);}));
@@ -728,26 +948,72 @@ requestAnimationFrame(loop);
 
 // ---------------- 介面 ----------------
 const $=id=>document.getElementById(id);
+function openStory(){
+  const ch = CHAPTERS[cfg.level] || CHAPTERS['1'];
+  $('storyBadge').textContent = ch.badge;
+  $('storyTitle').textContent = ch.title;
+  $('storyEnemy').src = ch.enemyImg;
+  $('storyEnemy').alt = ch.title + '敵方強敵';
+  $('storyText').textContent = ch.story;
+  $('storyTip').textContent = ch.tip;
+  landscape.setTheme(cfg.level);
+  $('menu').style.display='none';
+  $('endMenu').style.display='none';
+  $('storyOverlay').style.display='flex';
+}
 function start(){
   try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); actx.resume&&actx.resume(); }catch(e){}
   try{ localStorage.setItem('armyMathCfg2',JSON.stringify(cfg)); }catch(e){}
   newGame(); running=true; paused=false;
-  $('menu').style.display='none'; $('endMenu').style.display='none'; $('pauseBtn').style.display='block';
+  $('menu').style.display='none'; $('storyOverlay').style.display='none'; $('endMenu').style.display='none';
+  $('pauseBtn').style.display='block';
   $('hint').style.display='block';
 }
 function endGame(win){
   clearQuiz(); reviewQuiz();
   G.over=true; running=false; $('pauseBtn').style.display='none';
-  if (win){ burst(0,4,G.boss.z,0xffd23f,60,10); scene.remove(G.boss.grp); beep(523,0.15); setTimeout(()=>beep(659,0.15),150); setTimeout(()=>beep(784,0.3),300); }
+  if (win){
+    saveMedal(cfg.level);
+    burst(0,4,G.boss.z,0xffd23f,60,10); scene.remove(G.boss.grp);
+    beep(523,0.15); setTimeout(()=>beep(659,0.15),150); setTimeout(()=>beep(784,0.3),300);
+  }
   else beep(160,0.4,'sawtooth',0.05);
   setTimeout(()=>{
-    $('endTitle').textContent = win ? '勝利！打敗首領！' : (G.army<=0 ? '軍隊全軍覆沒' : '首領衝過來了');
+    const ch = G.chapter;
+    const allWon = ['1','2','3'].every(k=>medals[k]);
+    $('endTitle').textContent = win
+      ? (cfg.level==='3' ? '全章通關！成功守護王國！' : `${ch.title}・勝利！`)
+      : (G.army<=0 ? '軍隊全軍覆沒' : '首領衝過來了');
+    const medalEl=$('endMedal');
+    if (win) {
+      medalEl.hidden=false;
+      medalEl.textContent = allWon && cfg.level==='3'
+        ? `獲得 ${ch.medalName} ・ 集齊三枚勳章！`
+        : `獲得 ${ch.medalName}`;
+    } else {
+      medalEl.hidden=true;
+    }
+    const nextBtn=$('nextChapterBtn');
+    const hasNext = win && (cfg.level==='1' || cfg.level==='2');
+    nextBtn.hidden=!hasNext;
+    if (hasNext) {
+      const nextLv = cfg.level==='1' ? '2' : '3';
+      nextBtn.textContent = `進入下一章（第${nextLv==='2'?'二':'三'}章・${CHAPTERS[nextLv].title}）`;
+      nextBtn.onclick = () => {
+        cfg.level = nextLv;
+        syncOptionButtons();
+        openStory();
+      };
+    }
     $('stMax').textContent=G.maxArmy; $('stAcc').textContent=`${G.good}/${G.total}`; $('stTime').textContent=Math.round(G.t);
     $('log').innerHTML = G.log.length ? G.log.slice(-40).map(l=>`<div class="${l.best?'ok':'no'}">${l.best?'✓':'✗'} ${l.line}${l.better?`（揀 ${l.better} 會更多）`:''}</div>`).join('') : '<div>未有選擇任何門</div>';
     $('endMenu').style.display='flex';
   }, win?900:600);
 }
-$('startBtn').onclick=start; $('againBtn').onclick=start;
+$('startBtn').onclick=openStory;
+$('storyGoBtn').onclick=start;
+$('storyBackBtn').onclick=()=>{ $('storyOverlay').style.display='none'; $('menu').style.display='flex'; };
+$('againBtn').onclick=start;
 $('homeBtn').onclick=()=>{ $('endMenu').style.display='none'; $('menu').style.display='flex'; };
 function pauseGame(){
   if(!running || paused) return;

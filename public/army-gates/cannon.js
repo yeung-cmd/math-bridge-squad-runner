@@ -1,5 +1,5 @@
 // One shuffled deck per operation, reused until that operation's questions run out.
-function cannonQuestions(level, limit) {
+function cannonQuestions(level, limit, choiceCount = 2) {
   const decks = new Map();
   let operations = [];
   function shuffle(items) {
@@ -10,7 +10,7 @@ function cannonQuestions(level, limit) {
     return items;
   }
   return () => {
-    if (!operations.length) operations=shuffle(level==='2' ? ['＋','−','×'] : ['＋','−']);
+    if (!operations.length) operations=shuffle((level==='2'||level==='3') ? ['＋','−','×'] : ['＋','−']);
     const op=operations.pop();
     if (!decks.get(op)?.length) {
       const items=[];
@@ -22,9 +22,27 @@ function cannonQuestions(level, limit) {
       decks.set(op,shuffle(items));
     }
     const q=decks.get(op).pop();
-    const distractors=[q.answer+1,q.answer-1, q.op==='×'?q.a+q.b:Math.abs(q.a-q.b)];
-    const wrong=shuffle(distractors.filter(n=>n!==q.answer && n>=0 && n<=limit))[0];
-    return {...q, expression:q.a+' '+op+' '+q.b, options:shuffle([q.answer,wrong])};
+    const candidates=[q.answer+1, q.answer-1, q.answer+2, q.answer-2, q.answer+10, q.answer-10];
+    if (op==='×') candidates.push(q.a+q.b, q.a*(q.b+1), q.a*(q.b-1), (q.a+1)*q.b, (q.a-1)*q.b);
+    else if (op==='＋') candidates.push(Math.abs(q.a-q.b));
+    else candidates.push(q.a+q.b);
+    const seen=new Set([q.answer]);
+    const valid=[];
+    for (const c of candidates) {
+      if (Number.isInteger(c) && c>=0 && c<=limit && !seen.has(c)) {
+        seen.add(c); valid.push(c);
+      }
+    }
+    const picked=shuffle(valid).slice(0, choiceCount-1);
+    if (picked.length < choiceCount-1) {
+      const pool=[];
+      for (let v=0; v<=limit; v++) if (!seen.has(v)) pool.push(v);
+      for (const v of shuffle(pool)) {
+        picked.push(v);
+        if (picked.length >= choiceCount-1) break;
+      }
+    }
+    return {...q, expression:q.a+' '+op+' '+q.b, options:shuffle([q.answer,...picked])};
   };
 }
 

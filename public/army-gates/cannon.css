@@ -1,13 +1,13 @@
 html,body{touch-action:auto}
 #c{touch-action:none}
 .overlay .panel{touch-action:pan-y}
-#quizCard{position:fixed;z-index:6;left:50%;bottom:max(8px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(94vw,420px);border:2px solid #f4c76d;border-radius:16px;padding:8px 14px 11px;background:#14334bf5;color:white;box-shadow:0 3px 12px #14243688;text-align:center;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+#quizCard{position:fixed;z-index:6;left:50%;bottom:max(8px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(94vw,440px);border:2px solid #f4c76d;border-radius:16px;padding:8px 14px 11px;background:#14334bf5;color:white;box-shadow:0 3px 12px #14243688;text-align:center;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
 #quizCard[hidden],#quizCard [hidden]{display:none}
-.quiz-top,#quizChoices{display:flex;gap:12px;align-items:center;justify-content:space-between}
+.quiz-top,#quizChoices{display:flex;gap:10px;align-items:center;justify-content:space-between}
 .quiz-top{font-size:15px;color:#ffe19c}#quizClock{font-weight:900;font-variant-numeric:tabular-nums}
 #quizTimer{width:100%;height:6px;display:block;margin:3px 0;accent-color:#72e3d8}
 #quizMath{font-size:clamp(22px,6vw,32px);line-height:1.35;font-weight:900}
-#quizChoices button{flex:1;min-height:44px;background:#e8fffd;border:2px solid #55bdb5;border-radius:11px;color:#10304b;line-height:1.2;font-family:inherit;font-weight:900;font-size:24px;cursor:pointer;touch-action:manipulation}
+#quizChoices button{flex:1 1 0;min-width:0;min-height:44px;padding:4px 6px;background:#e8fffd;border:2px solid #55bdb5;border-radius:11px;color:#10304b;line-height:1.2;font-family:inherit;font-weight:900;font-size:clamp(19px,5vw,24px);cursor:pointer;touch-action:manipulation}
 #quizResult{min-height:1.45em;font-size:clamp(16px,4.2vw,21px);font-weight:900;color:#ffe39d;font-variant-numeric:tabular-nums;letter-spacing:.3px}
 #quizReview{margin-top:12px;padding:8px;border:1px solid #d9c499;border-radius:12px;text-align:left}#quizReview h2{font-size:17px;margin:0;color:#214c71}#quizReview p{margin:4px 0}#quizErrors{padding-left:20px;margin:0}
 
@@ -51,3 +51,30 @@ html,body{touch-action:auto}
 @media (prefers-reduced-motion:reduce) {
   #cannonVignette,#cannonFlash { display:none; }
 }
+
+/* 三章故事卡、通關勳章與中段登場橫幅 */
+.medal-shelf{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 10px;padding:7px 12px;border-radius:12px;background:#fff;border:2px solid #e8d7b4;font-size:13px;font-weight:700;color:#5a4630}
+.medal-icons{display:flex;gap:6px;align-items:center}
+.medal-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;background:#f2ece0;color:#8a7a62;border:1px solid #d9c9a8;font-size:12px;font-weight:700}
+.medal-pill.earned{background:#fff1c4;color:#8a4b00;border-color:#e5a93b;box-shadow:0 1px 0 #d59326}
+.medal-crown{background:linear-gradient(135deg,#ffd86b,#ff9f2e);color:#4f2100;border-color:#c46a06;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:900}
+.opts-chapters .opt{position:relative;padding:10px 4px 8px}
+.opt .medal{position:absolute;top:-7px;right:-4px;font-size:16px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));display:none}
+.opt.has-medal .medal{display:block}
+
+.story-panel{width:min(440px,100%);padding:18px 20px 20px}
+.story-badge{display:inline-block;padding:4px 12px;border-radius:999px;background:#1c4f9c;color:#fff;font-size:13px;font-weight:900;letter-spacing:.5px;margin-bottom:6px}
+.story-title{margin:2px 0 10px;font-size:28px;font-weight:900;color:#e2591b;text-shadow:0 2px 0 #ffd23f}
+.story-cast{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0 12px;padding:10px 12px;border-radius:16px;background:linear-gradient(180deg,#eef6ff 0%,#fff 100%);border:2px solid #d9c499}
+.story-cast img{width:88px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,.22))}
+.story-vs{font-size:20px;font-weight:900;color:#e2591b;background:#ffe7b3;border:2px solid #e0a74a;border-radius:999px;padding:4px 10px}
+.story-text{margin:0 0 10px;padding:10px 13px;border-radius:12px;background:#fff;border:2px solid #e8d7b4;color:#4a3926;font-size:15px;line-height:1.55;text-align:left;font-weight:500}
+.story-tip{margin:0 0 6px;padding:8px 11px;border-radius:10px;background:#eaf4ff;border:1.5px solid #96bde6;color:#16468a;font-size:13.5px;line-height:1.45;text-align:left;font-weight:700}
+.story-sub{margin-top:10px;width:100%;padding:10px;border:2px solid #9fb4d4;border-radius:12px;background:#fff;color:#1c4f9c;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
+
+#stageBanner{position:fixed;z-index:8;left:50%;top:14%;transform:translate(-50%,-10px) scale(.95);pointer-events:none;max-width:min(92vw,440px);padding:10px 22px;border-radius:16px;border:3px solid #ffd23f;background:linear-gradient(180deg,#3d124df5,#1c0a2ef7);color:#fff8dc;font-size:clamp(17px,4.5vw,23px);font-weight:900;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 22px #a855ff88;opacity:0;will-change:opacity,transform;transition:opacity .16s ease,transform .16s ease}
+#stageBanner.show{opacity:1;transform:translate(-50%,0) scale(1)}
+
+#endMedal{margin:6px 0 10px;padding:7px 14px;border-radius:12px;background:#fff1c4;border:2px solid #e5a93b;color:#7a3e00;font-size:15px;font-weight:900}
+#endMedal[hidden]{display:none}
+.big[hidden]{display:none}
