@@ -48,21 +48,24 @@
 .rescue-hud {
   display: flex;
   align-items: center;
-  gap: .75rem;
-  padding: .45rem .85rem;
+  gap: .42rem;
+  padding: .45rem .62rem;
+  background: rgba(11, 22, 42, 0.48);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .rescue-hud span {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: .4rem;
-  font-size: .875rem;
+  gap: .38rem;
+  font-size: clamp(.68rem, 2.5vw, .84rem);
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .rescue-hud svg { color: #8aefe4; }
-.rescue-hud strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; color: #ffe190; }
+.rescue-hud strong { font-size: clamp(.96rem, 3.7vw, 1.25rem); font-variant-numeric: tabular-nums; color: #ffe190; }
 .rescue-icon { min-width: 42px; padding: 0; }
 
 .rescue-question {
@@ -176,12 +179,12 @@
 .rescue-controls button:disabled { cursor: default; }
 .rescue-controls .rescue-advance:disabled { opacity: .48; }
 
-.rescue-summary { padding: 1rem; gap: 1rem; }
-.rescue-summary header { text-align: center; margin-top: .4rem; }
+.rescue-summary { padding: 1rem; gap: .9rem; max-height: calc(100svh - 76px); overflow-y: auto; }
+.rescue-summary header { text-align: center; margin-top: .3rem; }
 .rescue-summary dl > div { background: #101d36; padding: .55rem; border-radius: 12px; }
 .rescue-summary dt { color: #bfd5ed; font-size: .875rem; }
 .rescue-summary dd { font-weight: 900; font-size: 1.35rem; color: #ffe192; }
-.rescue-review { overflow: auto; max-height: 280px; padding: 0; list-style: none; }
+.rescue-review { overflow: auto; max-height: 240px; padding: 0; list-style: none; }
 .rescue-review li { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; padding: .55rem; border-bottom: 1px solid #99bdf32d; }
 .rescue-review li span { font-size: .8rem; }
 
@@ -189,9 +192,6 @@
   .rescue-feedback, .rescue-timer > div { animation: none; transition: none; }
 }
 
-.rescue-hud { gap: .42rem; padding-inline: .62rem; }
-.rescue-hud span { font-size: clamp(.68rem, 2.5vw, .84rem); white-space: nowrap; }
-.rescue-hud strong { font-size: clamp(.96rem, 3.7vw, 1.25rem); }
 .rescue-hud .rescue-danger, .rescue-hud .rescue-danger strong, .rescue-hud .rescue-danger svg { color: #ffb4a4; }
 .rescue-shield {
   display: block;

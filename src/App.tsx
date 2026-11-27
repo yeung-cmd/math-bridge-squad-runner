@@ -32,7 +32,8 @@ import { getMissionProgress, MissionId } from './utils/missions';
 import {
   Volume2,
   VolumeX,
-  FastForward
+  FastForward,
+  Pause
 } from 'lucide-react';
 
 const STORAGE_KEY = 'math_bridge_squad_progress_v1';
@@ -414,17 +415,20 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
 
   return (
     <div className="game-shell min-h-svh w-full text-white flex flex-col items-center justify-center p-2 sm:p-4 gap-3">
-      <nav className="w-full max-w-[480px] flex justify-between items-center gap-3">
-        <button onClick={returnToSettings} className="rounded-xl px-4 py-2 bg-slate-800 border border-white/20 font-bold cursor-pointer">← 返回設定</button>
-        <span className="text-sm text-slate-300">{currentModeConfig.title} · {questionDuration} 秒／題</span>
-        <button onClick={handleToggleMute} aria-label="切換音效" className="p-2 rounded-xl bg-slate-800 cursor-pointer">{muted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
+      <nav className="w-full max-w-[480px] flex justify-between items-center gap-2">
+        <button onClick={returnToSettings} className="rounded-xl px-3.5 py-2 bg-slate-800/90 border border-white/20 text-sm font-bold hover:bg-slate-700 cursor-pointer">← 返回設定</button>
+        <div className="text-center leading-tight">
+          <div className="font-black text-sm text-white">橋樑算術衝鋒</div>
+          <div className="text-xs text-slate-300">{currentModeConfig.shortTitle} · {questionDuration} 秒／題</div>
+        </div>
+        <button onClick={handleToggleMute} aria-label="切換音效" className="p-2.5 rounded-xl bg-slate-800/90 border border-white/15 hover:bg-slate-700 cursor-pointer">{muted ? <VolumeX size={19} /> : <Volume2 size={19} />}</button>
       </nav>
       <main className="legion-board">
         {gameState !== 'SUMMARY' && <>
           <header className="legion-hud">
             <span>士兵 <b>{troops}</b></span><span>得分 <b>{score}</b></span>
             <span className="legion-weapon">{currentWeapon.name}</span>
-            <button onClick={() => setIsPaused(true)} aria-label="暫停遊戲">Ⅱ</button>
+            <button onClick={() => setIsPaused(true)} aria-label="暫停遊戲"><Pause size={17} /></button>
           </header>
           {gameState === 'PLAYING' ? <section className="legion-question" aria-label="數學題目">
             <div className="legion-meta"><span>第 {currentQuestion.index}／{questions.length} 題 · {currentModeConfig.shortTitle}</span><span>{questionSecondsLeft.toFixed(1)} 秒</span></div>
@@ -443,15 +447,16 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
             {missionToast && <p className="legion-mission-toast" role="status">{missionToast}</p>}
           </div>
           {gameState === 'PLAYING' ? <div className="legion-controls">
-            <div className="legion-missions" aria-label="本關任務進度">{missionProgress.map(m => <span key={m.id} title={m.description}>
+            <div className="legion-missions" aria-label="本關任務進度">{missionProgress.map(m => <span key={m.id} className={m.complete ? 'done' : ''} title={m.description}>
               {m.complete ? '✓ ' : ''}{m.title} {m.id === 'boss' && !m.complete ? '待完成' : `${m.value}/${m.target}`}
             </span>)}</div>
             <div className="legion-lanes">{(['LEFT','RIGHT'] as const).map(lane => {
               const label = lane === 'LEFT' ? '左' : '右';
+              const badge = lane === 'LEFT' ? '← 左道' : '右道 →';
               const value = lane === 'LEFT' ? currentQuestion.leftOption : currentQuestion.rightOption;
               return <button key={lane} type="button" aria-label={`${label}邊跑道 ${value}`} aria-pressed={selectedLane === lane}
                 disabled={isPaused || countdown !== null || isAdvancing || !!impactResult} onClick={() => handleSelectLane(lane)}>
-                <small>{label}</small> {value}
+                {lane === 'LEFT' ? <><small>{badge}</small> <span>{value}</span></> : <><span>{value}</span> <small>{badge}</small></>}
               </button>;
             })}</div>
             <button className="legion-advance" type="button" disabled={!selectedLane || isAdvancing || !!impactResult || isPaused || countdown !== null} onClick={handleAdvance}>
@@ -472,6 +477,7 @@ export default function App({ onChooseGame }: { onChooseGame: () => void }) {
             missionProgress={getMissionProgress(records, bossVictory)}
             onPlayAgain={() => startNewGame(selectedMode)}
             onSwitchMode={(mId) => { setSelectedMode(mId); returnToSettings(); }}
+            onReturnSettings={returnToSettings}
           />
         )}
 

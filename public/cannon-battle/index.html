@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#152f43"><title>數學神炮大作戰</title>
+<html lang="zh-HK"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#152f43"><title>數學神炮：雪地三路</title>
 <script>// 設定區：回合秒數、射擊間隔、每隊人數、紅軍規模及前線速度。
 const RULES = {
   speed: [{seconds:15, interval:1.2},{seconds:12, interval:.8},{seconds:8, interval:.6}],
@@ -155,10 +155,17 @@ h1{display:flex;flex-wrap:wrap;gap:.17em;align-items:center;font-size:clamp(29px
 @media(max-width:1280px) and (max-aspect-ratio:1/1){#app[data-mode=setup] #view{inset:0 0 auto;height:34%}#hero{inset:0 0 auto;height:34%}.brand{margin:16px 22px}.crest{width:37px;height:45px}.crest b{font-size:23px}.heroFoot{left:18px;bottom:12px;font-size:14px}.heroFoot:before{height:25px}#setup{inset:34% 0 0;width:100%;border-left:0;border-top:5px solid #294453}.setupInner{padding:16px clamp(16px,5vw,38px);justify-content:flex-start}.controls{grid-template-columns:1fr 1fr;column-gap:16px}.levelField,.optionRow{grid-column:1/-1}.field{flex-wrap:wrap;gap:0;align-content:center}.field select{max-width:100%;min-width:60px;flex:1}.field,.field select{font-size:15px}.panelHead{margin:0 0 4px;padding-bottom:6px}.start{margin-top:12px}}
 @media(max-width:480px) and (orientation:portrait){.hudbar{gap:4px;left:4px;right:4px}.counter{min-width:65px;padding:4px 7px}.round{padding:5px 8px}.field:not(.levelField){display:grid;grid-template-columns:1fr;gap:0}.field:not(.levelField)>span{padding-top:5px;font-size:13px;color:#4a626c}.field:not(.levelField) select{margin-top:-7px;min-height:60px;text-align-last:left}.controls{gap:0 12px}.setupInner{padding-top:10px}.optionRow{gap:12px}.start{min-height:60px}.answer{font-size:12px;padding:3px}.heroFoot{right:8px}.brand{margin:13px 18px}}
 @media(max-height:590px) and (orientation:landscape){.setupInner{padding:16px}.panelHead{margin-bottom:0;padding-bottom:6px}.controls{grid-template-columns:1fr 1fr;column-gap:10px}.levelField,.optionRow{grid-column:1/-1}.field:not(.levelField){flex-wrap:wrap;justify-content:flex-start;gap:0}.field:not(.levelField) select{min-width:60px}.field select,.field,.switch{font-size:14px}.start{margin-top:12px}}
+.hubTopbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.hubBackBtn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;background:#fff;border:2px solid #8aa4b5;color:#172f41;font-size:13px;font-weight:800;text-decoration:none;box-shadow:0 2px 0 #c5d3dc;transition:background .15s,border-color .15s}
+.hubBackBtn:hover{background:#eef6fb;border-color:#118cdc}
+.slotBadge{display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;background:#1e4d68;color:#fff;font-size:12px;font-weight:800;letter-spacing:.03em}
+.hubSubLink{display:block;text-align:center;margin-top:10px;padding:6px;color:#1e4d68;font-size:14px;font-weight:800;text-decoration:none;border-radius:10px}
+.hubSubLink:hover{background:#118cdc18;text-decoration:underline}
+@media(max-width:1280px) and (max-aspect-ratio:1/1){.hubTopbar{margin-bottom:6px}}
 </style></head><body><main id="app" data-mode="setup">
 <div id="view" aria-label="三維雪地城堡戰場"></div>
-<div id="hero"><div class="brand" id="brand"><span class="crest" aria-hidden="true"><b>❄</b></span><h1>數學神炮<em>大作戰</em></h1></div><div class="heroFoot">看清每炮人數，把大炮移到士兵最多的那條路！</div></div>
-<section id="setup" class="panel"><div class="setupInner"><header class="panelHead"><i class="sliders" aria-hidden="true"></i><h2>老師設定</h2></header><div class="controls">
+<div id="hero"><div class="brand" id="brand"><span class="crest" aria-hidden="true"><b>❄</b></span><h1>數學神炮<em>雪地三路</em></h1></div><div class="heroFoot">看清每炮人數，把大炮移到士兵最多的那條路！</div></div>
+<section id="setup" class="panel"><div class="setupInner"><div class="hubTopbar"><a class="hubBackBtn" href="../">← 返回遊戲大廳</a><span class="slotBadge">遊戲 04 · 3D 雪地三路</span></div><header class="panelHead"><i class="sliders" aria-hidden="true"></i><h2>老師設定</h2></header><div class="controls">
 <label class="field levelField"><span>關卡</span><select id="level"><option value="1">第一關：加減混合</option><option value="2">第二關：加減乘混合</option></select></label>
 <label class="field"><span>門上數字範圍</span><select id="range"><option value="10">10 以內</option><option value="20">20 以內</option><option value="50">50 以內</option></select></label>
 <label class="field" id="factorField" hidden><span>乘數範圍</span><select id="factor"><option value="5">2 至 5</option><option value="9">2 至 9</option></select></label>
@@ -168,8 +175,8 @@ h1{display:flex;flex-wrap:wrap;gap:.17em;align-items:center;font-size:clamp(29px
 <button class="action start" id="start"><i class="playIcon"></i>開始遊戲</button></div></section>
 <div id="hud" hidden><div class="hudbar"><div class="counter blue">藍軍<b id="blueCount">0</b></div><div class="round"><span id="roundNo"></span><b id="seconds"></b></div><div class="counter red">紅軍<b id="redCount"></b><i id="health"></i></div><button class="pauseBtn" id="pause" aria-label="暫停">Ⅱ</button></div></div>
 <div id="labels" hidden><span id="cannonTag" class="tag"></span><i class="ring" id="ring" hidden></i><div class="tutorial" id="tutorial" hidden><span class="hand">☝</span>　左右拖動大炮</div></div>
-<div id="veil" hidden><section id="pauseBox" class="panel dialog" hidden><h2>遊戲暫停</h2><button class="action" id="resume">繼續</button><button class="action secondary" id="restart">重新開始</button><button class="action secondary" id="back">返回設定</button></section>
-<section class="panel dialog" id="results" hidden><h2 id="outcome"></h2><div class="stats" id="stats"></div><h3>逐回合紀錄</h3><div class="history" id="history"></div><div class="resultActions"><button class="action" id="again">再玩一次</button><button class="action secondary" id="settings">返回設定</button></div></section></div><output id="fps" hidden></output>
+<div id="veil" hidden><section id="pauseBox" class="panel dialog" hidden><h2>遊戲暫停</h2><button class="action" id="resume">繼續</button><button class="action secondary" id="restart">重新開始</button><button class="action secondary" id="back">返回設定</button><a class="hubSubLink" href="../">← 返回遊戲大廳（切換其他遊戲）</a></section>
+<section class="panel dialog" id="results" hidden><h2 id="outcome"></h2><div class="stats" id="stats"></div><h3>逐回合紀錄</h3><div class="history" id="history"></div><div class="resultActions"><button class="action" id="again">再玩一次</button><button class="action secondary" id="settings">返回設定</button></div><a class="hubSubLink" href="../">← 返回遊戲大廳（切換其他遊戲）</a></section></div><output id="fps" hidden></output>
 <div id="error" hidden>此瀏覽器未能啟動三維畫面。請使用支援 WebGL 的瀏覽器開啟遊戲。</div></main>
 <script>/*
 The MIT License

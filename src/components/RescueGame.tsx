@@ -279,7 +279,10 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
     <div className="rescue-shell min-h-svh text-white flex flex-col items-center justify-center px-2 py-2 sm:px-5 sm:py-4">
       <nav aria-label="遊戲操作" className="rescue-nav">
         <button type="button" onClick={onSettings}><ArrowLeft size={18} /> 返回設定</button>
-        <h1 ref={heading} tabIndex={-1} className="font-black text-sm outline-none">數學星光救援隊</h1>
+        <div className="text-center leading-tight">
+          <h1 ref={heading} tabIndex={-1} className="font-black text-sm outline-none">星光燈塔保衛戰</h1>
+          <span className="text-[11px] text-teal-200/90 font-bold">{QUESTION_MODES[mode].shortTitle} · {seconds} 秒／題</span>
+        </div>
         <button type="button" onClick={onToggleMute} aria-label={muted ? '開啟音效' : '關閉音效'}>{muted ? <VolumeX size={19} /> : <Volume2 size={19} />}</button>
       </nav>
 
@@ -347,8 +350,8 @@ function RescueRun({ questions, seconds, mode, autoAdvance, muted, onToggleMute,
           {inQuestion && (
             <div className="rescue-controls">
               <div className="grid grid-cols-2 gap-2.5">
-                <button type="button" data-rescue-lane aria-label={`左邊跑道 ${question.leftOption}`} aria-pressed={view.selected === -1} disabled={!canAnswer} onClick={() => select(-1)}><small>←</small> {question.leftOption}</button>
-                <button type="button" data-rescue-lane aria-label={`右邊跑道 ${question.rightOption}`} aria-pressed={view.selected === 1} disabled={!canAnswer} onClick={() => select(1)}>{question.rightOption} <small>→</small></button>
+                <button type="button" data-rescue-lane aria-label={`左邊跑道 ${question.leftOption}`} aria-pressed={view.selected === -1} disabled={!canAnswer} onClick={() => select(-1)}><small>← 左</small> {question.leftOption}</button>
+                <button type="button" data-rescue-lane aria-label={`右邊跑道 ${question.rightOption}`} aria-pressed={view.selected === 1} disabled={!canAnswer} onClick={() => select(1)}>{question.rightOption} <small>右 →</small></button>
               </div>
               <button type="button" className="rescue-advance" onClick={advance} disabled={!canAnswer || view.selected === 0}>確認並發射 <Zap size={18} aria-hidden="true" /></button>
             </div>

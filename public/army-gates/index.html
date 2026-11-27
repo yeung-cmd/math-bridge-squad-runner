@@ -57,7 +57,7 @@
   #lvl.crossbow{background-image:url(art/crossbow.webp)}
   #hint{font-size:clamp(13px,3.5vw,22px)}
 </style>
-<link rel="stylesheet" href="./cannon.css?v=7">
+<link rel="stylesheet" href="./cannon.css?v=8">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -90,36 +90,41 @@
 </section>
 
 <div class="overlay" id="menu">
-  <div class="panel">
-    <a class="hub-link" href="../">← 返回遊戲選擇</a>
+  <div class="panel menu-panel">
+    <div class="menu-topbar">
+      <a class="hub-link" href="../">← 返回遊戲大廳</a>
+      <span class="game-slot-badge">遊戲 03 · 3D 城堡攻堅</span>
+    </div>
     <h1>數學大軍：攻城救公主</h1>
-    <p>由外圍一路攻入內城三道城牆！<br>選出令軍隊最多的數學門，射倒守護各牆的巨人，最終救出城堡公主！</p>
+    <p class="menu-lead">由外圍連破三道城牆，選出最大數學門壯大軍團，射倒各層巨人救出公主！</p>
     <div class="medal-shelf" id="medalShelf">🛡️ 尚未救出王國公主・準備攻城！</div>
-    <div class="row"><div class="lab">數學題型</div>
-      <div class="opts" data-k="mathMode">
-        <button class="opt on" data-v="prog">漸進升級<span class="lvl-desc">一牆加減・二三牆含乘</span></button>
-        <button class="opt" data-v="addsub">加減混合<span class="lvl-desc">全三牆只出加減</span></button>
-        <button class="opt" data-v="mul">加減乘混合<span class="lvl-desc">全三牆含乘法</span></button>
-      </div></div>
-    <div class="row"><div class="lab">門上的數字</div>
-      <div class="opts" data-k="range">
-        <button class="opt" data-v="10">10以內</button>
-        <button class="opt on" data-v="20">20以內</button>
-        <button class="opt" data-v="50">50以內</button>
-      </div></div>
-    <div class="row"><div class="lab">攻城難度</div>
-      <div class="opts" data-k="speed">
-        <button class="opt on" data-v="easy">容易<span class="lvl-desc">門停3.5秒</span></button>
-        <button class="opt" data-v="mid">普通<span class="lvl-desc">門停2.5秒</span></button>
-        <button class="opt" data-v="hard">困難<span class="lvl-desc">敵強・門停2秒</span></button>
-      </div></div>
-    <div class="row"><div class="lab">答題大炮</div>
-      <div class="opts" data-k="quizSeconds">
-        <button class="opt" data-v="0">關閉</button>
-        <button class="opt on" data-v="5">5 秒</button>
-        <button class="opt" data-v="3">3 秒</button>
+    <div class="settings-grid">
+      <div class="row"><div class="lab">數學題型</div>
+        <div class="opts" data-k="mathMode">
+          <button class="opt on" data-v="prog">漸進升級<span class="lvl-desc">一牆加減・二三牆乘</span></button>
+          <button class="opt" data-v="addsub">加減混合<span class="lvl-desc">全三牆加減</span></button>
+          <button class="opt" data-v="mul">加減乘<span class="lvl-desc">全三牆含乘</span></button>
+        </div></div>
+      <div class="row"><div class="lab">門上的數字</div>
+        <div class="opts" data-k="range">
+          <button class="opt" data-v="10">10以內</button>
+          <button class="opt on" data-v="20">20以內</button>
+          <button class="opt" data-v="50">50以內</button>
+        </div></div>
+      <div class="row"><div class="lab">攻城難度</div>
+        <div class="opts" data-k="speed">
+          <button class="opt on" data-v="easy">容易<span class="lvl-desc">門停3.5秒</span></button>
+          <button class="opt" data-v="mid">普通<span class="lvl-desc">門停2.5秒</span></button>
+          <button class="opt" data-v="hard">困難<span class="lvl-desc">敵強・2秒</span></button>
+        </div></div>
+      <div class="row"><div class="lab">答題大炮</div>
+        <div class="opts" data-k="quizSeconds">
+          <button class="opt" data-v="0">關閉</button>
+          <button class="opt on" data-v="5">5 秒</button>
+          <button class="opt" data-v="3">3 秒</button>
+        </div>
+        <p class="note">限時答對啟動機關炮掃射敵兵、震退巨人並擊破紫罩。</p>
       </div>
-      <p class="note">大炮出題時限時答對，機關炮會掃射場上一半敵兵並震退巨人。</p>
     </div>
     <button class="big" id="startBtn">開始攻城</button>
   </div>
@@ -144,8 +149,9 @@
 <div class="overlay" id="pauseMenu" style="display:none">
   <div class="panel">
     <h1>暫停</h1>
-    <button class="big blue" id="resumeBtn">繼續</button>
-    <button class="big" id="quitBtn">返回主頁</button>
+    <button class="big blue" id="resumeBtn">繼續攻城</button>
+    <button class="big" id="quitBtn">返回攻城設定</button>
+    <a class="hub-sub-link" href="../">← 返回遊戲大廳（切換其他遊戲）</a>
   </div>
 </div>
 
@@ -168,7 +174,8 @@
     <section id="quizReview" hidden><h2>即時問答</h2><p id="quizScore"></p><ul id="quizErrors"></ul></section>
     <button class="big blue" id="retryStageBtn" hidden>重試本道城牆</button>
     <button class="big blue" id="againBtn">由外城重新開始</button>
-    <button class="big" id="homeBtn">返回主頁</button>
+    <button class="big" id="homeBtn">返回攻城設定</button>
+    <a class="hub-sub-link" href="../">← 返回遊戲大廳（切換其他遊戲）</a>
   </div>
 </div>
 
