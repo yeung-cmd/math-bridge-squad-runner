@@ -36,7 +36,7 @@ html,body{touch-action:auto}
   50% { opacity:.95; }
 }
 @media (prefers-reduced-motion:no-preference) {
-  .cannon-firing #logo,.cannon-firing #lvl,.cannon-firing #score,.cannon-firing #siegeBar { visibility:hidden; }
+  .cannon-firing #logo,.cannon-firing #lvl,.cannon-firing #score,.cannon-firing #siegeBar,.cannon-firing #buffBar { visibility:hidden; }
   .cannon-burst #cannonFlash { animation:cannonBurstPulse .14s steps(2,end) infinite; }
 }
 .cannon-firing #quizCard {
@@ -49,7 +49,7 @@ html,body{touch-action:auto}
   text-shadow:0 0 12px #2fd8ff88;
 }
 @media (prefers-reduced-motion:reduce) {
-  #cannonVignette,#cannonFlash { display:none; }
+  #cannonVignette,#cannonFlash,#frostVignette,#frenzyVignette { display:none; }
 }
 
 /* 三層城堡攻堅進度列 */
@@ -78,10 +78,42 @@ html,body{touch-action:auto}
 .story-tip{margin:0 0 6px;padding:8px 11px;border-radius:10px;background:#eaf4ff;border:1.5px solid #96bde6;color:#16468a;font-size:13.5px;line-height:1.45;text-align:left;font-weight:700}
 .story-sub{margin-top:10px;width:100%;padding:10px;border:2px solid #9fb4d4;border-radius:12px;background:#fff;color:#1c4f9c;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
 
-#stageBanner{position:fixed;z-index:8;left:50%;top:10%;transform:translate(-50%,-10px) scale(.95);pointer-events:none;max-width:min(92vw,460px);padding:8px 20px;border-radius:16px;border:3px solid #ffd23f;background:linear-gradient(180deg,#3d124df5,#1c0a2ef7);color:#fff8dc;font-size:clamp(16px,4.2vw,21px);font-weight:900;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 22px #a855ff88;opacity:0;will-change:opacity,transform;transition:opacity .18s ease,transform .18s ease}
+#stageBanner{position:fixed;z-index:8;left:50%;top:40%;transform:translate(-50%,-10px) scale(.95);pointer-events:none;max-width:min(90vw,430px);padding:6px 16px;border-radius:14px;border:2.5px solid #ffd23f;background:linear-gradient(180deg,#3d124df2,#1c0a2ef5);color:#fff8dc;font-size:clamp(14px,3.6vw,18px);font-weight:900;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 22px #a855ff88;opacity:0;will-change:opacity,transform;transition:opacity .18s ease,transform .18s ease}
 #stageBanner.show{opacity:1;transform:translate(-50%,0) scale(1)}
 
 #endMedal{margin:6px 0 10px;padding:7px 14px;border-radius:12px;background:#fff1c4;border:2px solid #e5a93b;color:#7a3e00;font-size:15px;font-weight:900}
 #endMedal[hidden],#endCast[hidden],.big[hidden]{display:none}
 #endCast{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0;padding:8px;border-radius:14px;background:linear-gradient(180deg,#fff7dc,#fff);border:2px solid #ebd089}
 #endCast img{width:70px;height:78px;object-fit:contain}
+
+#frostVignette,#frenzyVignette{
+  position:fixed;inset:0;pointer-events:none;opacity:0;will-change:opacity;transition:opacity .24s ease;z-index:2;
+}
+#frostVignette{
+  background:radial-gradient(ellipse at 50% 48%,transparent 48%,#62d9ff36 86%,#9ef4ff70 100%);
+}
+#frenzyVignette{
+  background:radial-gradient(ellipse at 50% 52%,transparent 48%,#ffd84f33 84%,#ff9d1c66 100%);
+}
+.frost-active #frostVignette{opacity:1}
+.frenzy-active #frenzyVignette{opacity:1}
+
+#buffBar{
+  top:46px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;
+  pointer-events:none;z-index:5;max-width:min(94vw,520px);
+}
+#buffBar[hidden]{display:none}
+.buff-pill{
+  padding:3px 10px;border-radius:999px;font-size:12px;font-weight:900;color:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);border:1.5px solid rgba(255,255,255,.5);white-space:nowrap;
+}
+.buff-pill.frost{background:rgba(14,116,144,.92);border-color:#7de8ff}
+.buff-pill.frenzy{background:rgba(180,83,9,.92);border-color:#fde047}
+.buff-pill.rally{background:rgba(126,34,206,.92);border-color:#e9d5ff}
+.buff-pill.magma{background:rgba(185,28,28,.95);border-color:#fca5a5}
+.buff-pill.aegis{background:rgba(88,28,135,.94);border-color:#c084fc}
+@media (max-width:640px){
+  #buffBar{top:132px;gap:4px}
+  .buff-pill{font-size:11px;padding:2px 8px}
+}

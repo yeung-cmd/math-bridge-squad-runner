@@ -57,12 +57,14 @@
   #lvl.crossbow{background-image:url(art/crossbow.webp)}
   #hint{font-size:clamp(13px,3.5vw,22px)}
 </style>
-<link rel="stylesheet" href="./cannon.css?v=6">
+<link rel="stylesheet" href="./cannon.css?v=7">
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="cannonVignette" aria-hidden="true"></div>
 <div id="cannonFlash" aria-hidden="true"></div>
+<div id="frostVignette" aria-hidden="true"></div>
+<div id="frenzyVignette" aria-hidden="true"></div>
 <div class="hud" id="logo">數學大軍<small id="lvlName">第一埲牆・外城橋頭</small></div>
 <div class="hud" id="lvl">武器：木弓</div>
 <div class="hud" id="siegeBar" aria-label="攻城進度">
@@ -72,6 +74,7 @@
   <span class="s-node" data-s="3">👸 公主</span>
   <span id="giantCount">巨人 1/1</span>
 </div>
+<div class="hud" id="buffBar" aria-live="polite" hidden></div>
 <div class="hud" id="score">正確 0 / 0</div>
 <button id="pauseBtn">❚❚</button>
 <div class="hud" id="hint">◀ 拖動軍隊到左／右，或直接點選門 ▶</div>
@@ -132,7 +135,7 @@
       <img src="./art/princess.webp" alt="王國公主">
     </div>
     <p class="story-text">公主被困在城堡最深處！請先打敗守在外圍的<strong>赤角巨魔</strong>，接著連破中城<strong>寒冰與聖翼雙巨人</strong>、內城<strong>熔岩／聖翼／暗夜巨王三巨頭</strong>，同一畫面長驅直入救出公主！</p>
-    <p class="story-tip">攻城秘訣：多選令軍隊最多的數學門升級武器；遇到敵群逼近時，答對「答題大炮」即可啟動機關掃射！</p>
+    <p class="story-tip">攻城秘訣：多選令軍隊最多的數學門升級武器；中城擊碎「冰凍水晶」凍住雙巨人，內城左右閃避「熔岩滾球」，再用「答題大炮」擊破暗夜巨王紫罩！</p>
     <button class="big" id="storyGoBtn">全軍出擊！</button>
     <button class="story-sub" id="storyBackBtn">返回調整設定</button>
   </div>
@@ -170,7 +173,7 @@
 </div>
 
 <script src="./vendor/three-r128.min.js"></script>
-<script src="./art.js?v=3"></script>
+<script src="./art.js?v=4"></script>
 <script src="./cannon.js?v=6"></script>
 <script>
 (() => {
@@ -283,6 +286,25 @@ function playVictoryFanfare(){
   if(!actx) return;
   [523.25, 659.25, 783.99, 1046.5].forEach((f,i)=>setTimeout(()=>beep(f,0.28,'triangle',0.085), i*130));
 }
+function playIceChime(){
+  if(!actx) return;
+  [1046.5, 1318.5, 1567.98].forEach((f,i)=>setTimeout(()=>beep(f,0.16,'sine',0.06), i*65));
+}
+function playMagmaWarn(){
+  if(!actx) return;
+  beep(220,0.14,'sawtooth',0.06);
+  setTimeout(()=>beep(180,0.16,'sawtooth',0.06), 140);
+}
+function playShieldBreak(){
+  if(!actx) return;
+  beep(587.3,0.12,'triangle',0.08);
+  setTimeout(()=>beep(880,0.16,'triangle',0.085), 80);
+  setTimeout(()=>beep(1174.7,0.22,'sine',0.08), 160);
+}
+function playBlessingChime(){
+  if(!actx) return;
+  [659.25, 783.99, 987.77, 1318.5].forEach((f,i)=>setTimeout(()=>beep(f,0.18,'sine',0.065), i*75));
+}
 
 // ---------------- Three.js 場景與 3D 角色預建 ----------------
 const canvas = document.getElementById('c');
@@ -325,6 +347,21 @@ const lavaFig    = armyArt.marchingFigure('lava_giant', 6.1, 6.7);
 const overlordFig= armyArt.marchingFigure('overlord', 6.5, 7.2);
 const princessFig= armyArt.marchingFigure('princess', 3.6, 4.4);
 
+// 預先建立第二、三層專屬技能與祝福 3D 物件（零執行期配置）
+const iceWallGrp = armyArt.iceWall();
+const magmaGrp = armyArt.magmaBoulder();
+const shadowShieldGrp = armyArt.shadowShield();
+const blessingGrp = armyArt.blessingOrb();
+shadowShieldGrp.position.set(0, 3.6, 0);
+shadowShieldGrp.visible = false;
+overlordFig.group.add(shadowShieldGrp);
+iceWallGrp.visible = false;
+magmaGrp.visible = false;
+blessingGrp.visible = false;
+scene.add(iceWallGrp);
+scene.add(magmaGrp);
+scene.add(blessingGrp);
+
 const STAGES = [
   {
     name: '第一埲牆・外城橋頭',
@@ -348,9 +385,9 @@ const STAGES = [
     shieldRate: 0.35,
     hordeMul: 1.15,
     giants: [
-      { fig: lavaFig,     name: '熔岩巨人', hpMul: 0.60, x: -1.55, z: -21.0 },
-      { fig: wingFig,     name: '聖翼巨人', hpMul: 0.68, x: 1.55,  z: -26.5 },
-      { fig: overlordFig, name: '暗夜巨王', hpMul: 0.90, x: 0,     z: -31.8 }
+      { fig: lavaFig,     name: '熔岩巨人', hpMul: 0.60, x: -1.55, z: -20.5 },
+      { fig: wingFig,     name: '聖翼巨人', hpMul: 0.68, x: 1.55,  z: -24.8 },
+      { fig: overlordFig, name: '暗夜巨王', hpMul: 0.90, x: 0,     z: -29.0 }
     ]
   }
 ];
@@ -382,6 +419,11 @@ const dirtyLabels=new Set();
 function setSpriteText(sp, text){ if (sp.userData.text===text) return; sp.userData.text=text; dirtyLabels.add(sp); }
 function flushLabels(){ dirtyLabels.forEach(sp=>{ drawLabel(sp.userData.cv, sp.userData.text, sp.userData.o); sp.material.map.needsUpdate=true; }); dirtyLabels.clear(); }
 
+const iceWallLbl = textSprite('0', {size:86, h:1.2, color:'#e6fcff', stroke:'#094d72', minChars:3});
+iceWallLbl.position.set(0, 4.45, 0); iceWallGrp.add(iceWallLbl);
+const blessingLbl = textSprite('公主祝福', {size:74, h:0.95, color:'#fff6b3', stroke:'#8f3800'});
+blessingLbl.position.set(0, 3.35, 0); blessingGrp.add(blessingLbl);
+
 // ---------------- 士兵（InstancedMesh） ----------------
 const dummy=new THREE.Object3D();
 const blueArmy=armyArt.army(scene,'archer',160,1.02,1.54);
@@ -390,7 +432,8 @@ const shieldArmy=armyArt.army(scene,'shield_raider',120,1.28,1.68);
 
 // ---------------- 箭矢 ----------------
 const MAXA=420;
-const arrowMesh=new THREE.InstancedMesh(new THREE.ConeGeometry(0.075,1.1,5).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0x9efffa}), MAXA);
+const arrowMat=new THREE.MeshBasicMaterial({color:0x9efffa});
+const arrowMesh=new THREE.InstancedMesh(new THREE.ConeGeometry(0.075,1.1,5).rotateX(-Math.PI/2), arrowMat, MAXA);
 arrowMesh.frustumCulled=false; scene.add(arrowMesh);
 const arrows=[]; for(let i=0;i<MAXA;i++) arrows.push({on:false,x:0,y:0,z:0});
 
@@ -498,6 +541,65 @@ function clearWorldActors(){
   G.giants.forEach(g=>scene.remove(g.grp)); G.giants.length=0;
   if (princessFig.group.parent) princessFig.group.parent.remove(princessFig.group);
   for (const a of arrows) a.on=false;
+  clearStageSkills();
+}
+function clearStageSkills(){
+  iceWallGrp.visible = false;
+  magmaGrp.visible = false;
+  shadowShieldGrp.visible = false;
+  blessingGrp.visible = false;
+  document.body.classList.remove('frost-active', 'frenzy-active');
+  arrowMat.color.setHex(0x9efffa);
+  redArmy.units.material.color.setHex(0xffffff);
+  shieldArmy.units.material.color.setHex(0xffffff);
+  if (G){
+    G.freezeT = 0; G.rallyT = 0; G.frenzyT = 0;
+    G.iceCD = 7.5; G.rallyCD = 8.5; G.magmaCD = 6.5; G.blessCD = 9.0;
+    G.iceWall.active = false;
+    G.magma.active = false;
+    G.blessing.active = false;
+    G.giants.forEach(g => { g.shielded = false; });
+  }
+  const bb = document.getElementById('buffBar');
+  if (bb){ bb.hidden = true; bb.innerHTML = ''; }
+}
+function updateBuffBar(){
+  const bb = document.getElementById('buffBar');
+  if (!bb || !G || !running || G.stagePhase !== 'combat'){
+    if (bb) bb.hidden = true;
+    return;
+  }
+  const pills = [];
+  if (G.freezeT > 0) pills.push(`<span class="buff-pill frost">❄️ 冰封 ${G.freezeT.toFixed(1)}s</span>`);
+  if (G.frenzyT > 0) pills.push(`<span class="buff-pill frenzy">✨ 黃金連射 ${G.frenzyT.toFixed(1)}s</span>`);
+  if (G.rallyT > 0 && G.freezeT <= 0) pills.push(`<span class="buff-pill rally">🪽 聖翼加速 ${G.rallyT.toFixed(1)}s</span>`);
+  if (G.magma.active && G.magma.phase === 'warn') pills.push(`<span class="buff-pill magma">🔥 熔岩滾球警告 ${Math.max(0, G.magma.t).toFixed(1)}s</span>`);
+  if (G.giants.some(g => g.shielded)) pills.push('<span class="buff-pill aegis">🛡️ 巨王紫罩（大炮破盾）</span>');
+  bb.hidden = pills.length === 0;
+  const html = pills.join('');
+  if (bb.innerHTML !== html) bb.innerHTML = html;
+}
+function breakIceWall(msg = '🧊 寒冰壁壘已擊碎！'){
+  if (!G || !G.iceWall.active) return;
+  G.iceWall.active = false;
+  iceWallGrp.visible = false;
+  burst(G.iceWall.x, 1.8, G.iceWall.z, 0x9beeff, 42, 9);
+  playIceChime();
+  floatText(msg, 0, 3.8, G.iceWall.z, {size:86, h:1.25, color:'#c2fbff', stroke:'#094d72', life:1.4});
+}
+function activateBlessing(){
+  if (!G || !G.blessing.active) return;
+  const bx = G.blessing.x, bz = G.blessing.z;
+  G.blessing.active = false;
+  blessingGrp.visible = false;
+  G.frenzyT = 5.5;
+  G.army = Math.min(999, G.army + 12);
+  G.maxArmy = Math.max(G.maxArmy, G.army);
+  document.body.classList.add('frenzy-active');
+  playBlessingChime();
+  burst(bx, 2.0, bz, 0xffe066, 46, 9);
+  floatText('👸 公主祝福！黃金雙倍連射 +12兵！', 0, 4.3, Math.max(-14, bz), {size:90, h:1.35, color:'#fff08a', stroke:'#8a3b00', life:1.9});
+  updateHud();
 }
 function enemyHP(kind){ return kind==='shield' ? 3 : 1; }
 function pushEnemy(x,z,kind){
@@ -534,6 +636,7 @@ function startStageCombat(stageIdx){
   G.stageIdx = stageIdx;
   G.stagePhase = 'combat';
   G.phaseT = 0;
+  clearStageSkills();
   G.giants.forEach(g=>scene.remove(g.grp));
   G.giants.length = 0;
   G.enemies.length = 0;
@@ -541,7 +644,7 @@ function startStageCombat(stageIdx){
   G.props.length = 0;
   clearGate('L'); clearGate('R');
   G.gates.L.wait = 0.8; G.gates.R.wait = 0.3;
-  G.propT = 6;
+  G.propT = stageIdx >= 1 ? 4.5 : 6;
   G.spawn = 0;
 
   const st = STAGES[stageIdx];
@@ -564,7 +667,8 @@ function startStageCombat(stageIdx){
     grp.add(lbl);
     G.giants.push({
       fig: def.fig, name: def.name, grp, label: lbl,
-      hp, max: hp, x: def.x, z: def.z, flash: 0
+      hp, max: hp, x: def.x, z: def.z, flash: 0,
+      shielded: false, shieldTriggered: false, shieldTime: 0, shieldDmg: 0
     });
   });
 
@@ -605,6 +709,10 @@ function newGame(startStage = 0){
     level: Math.min(2, startStage), volley:0, spawn:0, log:[], good:0, total:0,
     quizNext:FIRST_QUIZ_AT, quizLog:[], lastGate:-10, nextMath:null,
     enemies:[], props:[], propT:6, slots:[], giants:[], over:false, zone:'C',
+    freezeT:0, rallyT:0, frenzyT:0, iceCD:7.5, rallyCD:8.5, magmaCD:6.5, blessCD:9.0,
+    iceWall:{active:false, x:0, z:-18, hp:0},
+    magma:{active:false, phase:'warn', t:0, x:0, z:-18, startZ:-18, hit:false},
+    blessing:{active:false, x:0, z:-28, hp:24},
     gates:{ L:{g:null,mesh:null,age:0,wait:0.8, born:0}, R:{g:null,mesh:null,age:0,wait:0.3, born:0} }
   };
   G.armyLabel=textSprite(String(startArmy),{size:110,h:1.6,minChars:4}); scene.add(G.armyLabel);
@@ -666,20 +774,54 @@ function spawnProp(type){
   if (type==='barrel'){
     grp.add(armyArt.sprite('barrel',1.85,2.15));
     hp = 40 + Math.round(G.army*0.5);
+  } else if (type==='crystal'){
+    grp.add(armyArt.crystalProp());
+    hp = 45 + Math.round(G.army*0.45);
   } else {
     grp.add(armyArt.sprite('chest',2.0,1.6));
     hp = 60 + Math.round(G.army*0.7);
   }
   const leadZ = G.giants[0] ? G.giants[0].z : -25;
   const x=(Math.random()-.5)*3.6, z=Math.max(-27, leadZ+3.2);
-  const label=textSprite(String(hp),{size:96,h:1.1,minChars:3}); label.position.set(0,type==='barrel'?2.9:2.0,0); grp.add(label);
+  const lblY = type==='barrel' ? 2.9 : type==='crystal' ? 2.8 : 2.0;
+  const label=textSprite(String(hp),{size:96,h:1.1,minChars:3}); label.position.set(0,lblY,0); grp.add(label);
   grp.position.set(x,0,z); scene.add(grp);
   G.props.push({type,grp,x,z,hp,label,flash:0});
+}
+
+function applyGiantDamage(gi, rawDmg, byArrow = true){
+  const g = G.giants[gi];
+  if (!g) return;
+  let dealt = rawDmg;
+  if (byArrow && g.shielded){
+    dealt = rawDmg * 0.25;
+    g.shieldDmg += dealt;
+  }
+  g.hp -= dealt;
+  g.flash = 0.06;
+  if (g.name === '暗夜巨王' && !g.shielded && !g.shieldTriggered && g.hp > 0 && g.hp <= g.max * 0.55){
+    g.shieldTriggered = true;
+    g.shielded = true;
+    g.shieldTime = 0;
+    g.shieldDmg = 0;
+    shadowShieldGrp.visible = true;
+    burst(g.x, 3.2, g.z, 0xc084fc, 40, 8);
+    if (cfg.quizSeconds > 0) G.quizNext = Math.min(G.quizNext, G.t + 0.5);
+    showBanner(
+      cfg.quizSeconds > 0
+        ? '🛡️ 暗夜巨王展開紫罩！答對大炮即時破盾！'
+        : '🛡️ 暗夜巨王展開紫罩！集中火力撃碎護罩！',
+      2500
+    );
+  }
+  setSpriteText(g.label, String(Math.max(0, Math.ceil(g.hp))));
+  if (g.hp <= 0) eliminateGiant(gi);
 }
 
 function eliminateGiant(idx){
   const g = G.giants[idx];
   if (!g) return;
+  if (g.name === '暗夜巨王'){ g.shielded = false; shadowShieldGrp.visible = false; }
   burst(g.x, 3.2, g.z, 0xffd23f, 55, 10);
   burst(g.x, 3.8, g.z, 0x9effff, 30, 8);
   scene.remove(g.grp);
@@ -700,16 +842,23 @@ function breakProp(p){
   if (p.type==='barrel'){
     let n=0; for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i]; if (Math.hypot(e.x-p.x,e.z-p.z)<4.4){ G.enemies.splice(i,1); n++; } }
     burst(p.x,1.5,p.z,0xff7a1a,50,10); burst(p.x,1.5,p.z,0xffe066,30,7);
+    if (G.iceWall.active && Math.hypot(G.iceWall.x - p.x, G.iceWall.z - p.z) < 6.0){
+      G.iceWall.hp -= 65;
+      setSpriteText(iceWallLbl, String(Math.max(0, Math.ceil(G.iceWall.hp))));
+      if (G.iceWall.hp <= 0) breakIceWall();
+    }
     for (let gi=G.giants.length-1; gi>=0; gi--){
       const g=G.giants[gi];
-      if (Math.hypot(g.x-p.x, g.z-p.z)<6.5){
-        g.hp -= 65; g.flash=0.1;
-        setSpriteText(g.label, String(Math.max(0,Math.ceil(g.hp))));
-        if (g.hp<=0) eliminateGiant(gi);
-      }
+      if (Math.hypot(g.x-p.x, g.z-p.z)<6.5) applyGiantDamage(gi, 65, false);
     }
     floatText(`轟！ 炸走 ${n} 個敵兵`,0,4,p.z,{size:96,h:1.4,color:'#ffb020',stroke:'#5a1a00',life:1.6});
     beep(90,0.35,'sawtooth',0.08);
+  } else if (p.type==='crystal'){
+    G.freezeT = 4.0;
+    document.body.classList.add('frost-active');
+    playIceChime();
+    burst(p.x,1.5,p.z,0x85f6ff,45,9);
+    floatText('❄️ 冰封全場 4 秒！',0,4.2,p.z,{size:96,h:1.4,color:'#9beeff',stroke:'#094d72',life:1.7});
   } else {
     const bonus = Math.round(cfg.range/2);
     G.army=Math.min(999,G.army+bonus); G.maxArmy=Math.max(G.maxArmy,G.army);
@@ -720,7 +869,7 @@ function breakProp(p){
 }
 
 function beginAdvance(){
-  clearQuiz(); dragging=false;
+  clearQuiz(); dragging=false; clearStageSkills();
   clearGate('L'); clearGate('R');
   G.props.forEach(p=>scene.remove(p.grp)); G.props.length=0;
   for (const a of arrows) a.on=false;
@@ -771,7 +920,7 @@ function stepAdvance(dt){
 }
 
 function beginRescue(){
-  clearQuiz(); dragging=false;
+  clearQuiz(); dragging=false; clearStageSkills();
   clearGate('L'); clearGate('R');
   G.props.forEach(p=>scene.remove(p.grp)); G.props.length=0;
   for (const a of arrows) a.on=false;
@@ -848,9 +997,11 @@ addEventListener('keydown',e=>{ if(!G || !running || paused || quiz || G.stagePh
 function squadRadius(){ return 0.31*Math.sqrt(Math.min(G.army,160))+0.35; }
 function fire(dt){
   G.volley-=dt; if (G.volley>0) return;
-  G.volley = Math.max(0.22, 0.3 - G.level*0.02);
+  const baseInterval = Math.max(0.22, 0.3 - G.level*0.02);
+  G.volley = G.frenzyT > 0 ? baseInterval * 0.55 : baseInterval;
   const shown=Math.min(G.army,160); if(!shown) return;
-  const n=Math.min(24, Math.ceil(G.army/12)) + G.level;
+  const baseCount = Math.min(24, Math.ceil(G.army/12)) + G.level;
+  const n = G.frenzyT > 0 ? Math.ceil(baseCount * 1.35) : baseCount;
   for(let k=0;k<n;k++){
     const a=arrows.find(a=>!a.on); if(!a) break;
     const s=G.slots[Math.floor(Math.random()*shown)];
@@ -863,6 +1014,19 @@ function step(dt){
   if (protectedTime) dt*=.25;
   const S=G.S; G.t+=dt;
   const st = STAGES[G.stageIdx];
+
+  if (!protectedTime){
+    if (G.freezeT > 0){
+      G.freezeT = Math.max(0, G.freezeT - dt);
+      if (G.freezeT === 0) document.body.classList.remove('frost-active');
+    }
+    if (G.rallyT > 0) G.rallyT = Math.max(0, G.rallyT - dt);
+    if (G.frenzyT > 0){
+      G.frenzyT = Math.max(0, G.frenzyT - dt);
+      if (G.frenzyT === 0) document.body.classList.remove('frenzy-active');
+    }
+    arrowMat.color.setHex(G.frenzyT > 0 ? 0xffe066 : 0x9efffa);
+  }
 
   G.sx += (G.tx-G.sx)*Math.min(1,dt*10);
   const shown=Math.min(G.army,160);
@@ -885,7 +1049,7 @@ function step(dt){
 
   // 逐步補充庭院內敵兵
   const target = Math.min(ENEMY_LIMIT-18, Math.floor(S.horde*st.hordeMul + G.t*0.75));
-  G.spawn+=dt*S.refill;
+  if (G.freezeT <= 0) G.spawn+=dt*S.refill;
   let inLane=0;
   for(const enemy of G.enemies) if(enemy.z<L.EXIT) inLane++;
   const leadZ = G.giants[0] ? G.giants[0].z : -25;
@@ -900,27 +1064,159 @@ function step(dt){
     inLane+=waveSize;
   }
 
-  // 中路道具：炸藥桶與寶箱
+  // 中路道具：炸藥桶、寶箱與冰凍水晶（二三層出現）
   G.propT-=dt;
-  if (G.propT<=0){ G.propT = R(9,14); spawnProp(Math.random()<0.5 ? 'barrel' : 'chest'); }
+  if (G.propT<=0){
+    G.propT = R(9,14);
+    if (G.stageIdx >= 1){ const types=['barrel','chest','crystal']; spawnProp(types[R(0,2)]); }
+    else spawnProp(Math.random()<0.5 ? 'barrel' : 'chest');
+  }
   for (let i=G.props.length-1;i>=0;i--){ const p=G.props[i]; p.z += S.hordeSpeed*dt; p.grp.position.z=p.z;
-    p.grp.rotation.y = p.type==='chest' ? Math.sin(G.t*2)*0.2 : 0;
+    p.grp.rotation.y = p.type==='crystal' ? G.t*1.9 : (p.type==='chest' ? Math.sin(G.t*2)*0.2 : 0);
     if (p.z > L.EXIT){ scene.remove(p.grp); G.props.splice(i,1); } }
 
-  // 多造型巨人前後列陣推進
+  // 第二、三層巨人與戰場技能
+  if (!protectedTime && G.stageIdx >= 1){
+    const frost = G.giants.find(g => g.name === '寒冰巨人');
+    if (G.iceWall.active){
+      if (frost) G.iceWall.z = Math.min(frost.z + 3.6, -5.0);
+      iceWallGrp.position.set(G.iceWall.x, 0, G.iceWall.z);
+    } else if (frost && G.freezeT <= 0){
+      G.iceCD -= dt;
+      if (G.iceCD <= 0){
+        G.iceCD = 11.5;
+        G.iceWall.active = true;
+        G.iceWall.x = 0;
+        G.iceWall.z = Math.min(frost.z + 3.6, -5.5);
+        G.iceWall.hp = 55 + Math.round(G.army * 0.45);
+        iceWallGrp.position.set(0, 0, G.iceWall.z);
+        iceWallGrp.visible = true;
+        setSpriteText(iceWallLbl, String(G.iceWall.hp));
+        playIceChime();
+        burst(0, 1.8, G.iceWall.z, 0x85f6ff, 26, 7);
+        showBanner('🧊 寒冰巨人築起冰牆！集中火力擊碎！', 2200);
+      }
+    }
+
+    const wing = G.giants.find(g => g.name === '聖翼巨人');
+    if (wing && G.freezeT <= 0 && G.rallyT <= 0){
+      G.rallyCD -= dt;
+      if (G.rallyCD <= 0){
+        G.rallyCD = 13.0;
+        G.rallyT = 3.5;
+        burst(wing.x, 3.6, wing.z, 0xffe066, 28, 7);
+        beep(740, 0.14, 'triangle', 0.06);
+        showBanner('✨ 聖翼巨人發動加速號令！', 2000);
+      }
+    }
+  }
+
+  if (!protectedTime && G.stageIdx === 2){
+    const lava = G.giants.find(g => g.name === '熔岩巨人');
+    if (G.magma.active){
+      if (G.magma.phase === 'warn'){
+        G.magma.t -= dt;
+        magmaGrp.userData.warn.material.opacity = 0.25 + 0.22 * Math.abs(Math.sin(G.t * 12));
+        if (G.magma.t <= 0){
+          G.magma.phase = 'roll';
+          magmaGrp.userData.warn.material.opacity = 0.16;
+          beep(110, 0.25, 'sawtooth', 0.07);
+        }
+      } else {
+        G.magma.z += 19 * dt;
+        magmaGrp.userData.ball.position.z = G.magma.z - G.magma.startZ;
+        magmaGrp.userData.ball.rotation.x += dt * 7.5;
+        if (!G.magma.hit && G.magma.z >= L.SQUAD_Z - 1.4 && G.magma.z <= L.SQUAD_Z + 1.4 &&
+            Math.abs(G.sx - G.magma.x) < squadRadius() + 1.05){
+          G.magma.hit = true;
+          const loss = Math.min(Math.max(4, Math.round(G.army * 0.14)), 20);
+          const nextArmy = G.army > 8 ? Math.max(5, G.army - loss) : Math.max(1, G.army - 2);
+          const lost = G.army - nextArmy;
+          G.army = nextArmy;
+          burst(G.sx, 1.2, L.SQUAD_Z, 0xff5a1f, 36, 8);
+          floatText(`🔥 滾球擊中 -${lost} 兵`, G.sx, 3.6, L.SQUAD_Z, {size:96,h:1.4,color:'#ff844b',stroke:'#520d00',life:1.5});
+          beep(130, 0.28, 'sawtooth', 0.08);
+        }
+        if (G.magma.z > L.SQUAD_Z + 2.8){
+          G.magma.active = false;
+          magmaGrp.visible = false;
+          if (!G.magma.hit){
+            floatText('✓ 完美閃避！', G.sx, 3.8, L.SQUAD_Z, {size:90,h:1.3,color:'#9efffa',stroke:'#0c3f58',life:1.3});
+            beep(880, 0.1, 'sine', 0.04);
+          }
+        }
+      }
+    } else if (lava && G.freezeT <= 0){
+      G.magmaCD -= dt;
+      if (G.magmaCD <= 0){
+        G.magmaCD = 9.5;
+        const lanes = [-4.0, 0, 4.0];
+        let laneX = lanes[R(0, 2)];
+        if (Math.random() < 0.55){
+          laneX = lanes.reduce((best, c) => Math.abs(c - G.sx) < Math.abs(best - G.sx) ? c : best, 0);
+        }
+        const startZ = Math.min(lava.z + 2.2, -18.5);
+        G.magma = { active: true, phase: 'warn', t: 1.5, x: laneX, z: startZ, startZ, hit: false };
+        magmaGrp.position.set(laneX, 0, startZ);
+        magmaGrp.userData.ball.position.set(0, 1.35, 0);
+        magmaGrp.userData.ball.rotation.set(0, 0, 0);
+        magmaGrp.visible = true;
+        playMagmaWarn();
+        showBanner('⚠️ 熔岩滾球來襲！左右移動閃避！', 1800);
+      }
+    }
+
+    if (G.blessing.active){
+      G.blessing.z += (S.hordeSpeed * 0.85) * dt;
+      blessingGrp.position.set(G.blessing.x, 0, G.blessing.z);
+      if (G.blessing.z >= L.SQUAD_Z - 1.5 && Math.abs(G.sx - G.blessing.x) < squadRadius() + 1.15){
+        activateBlessing();
+      } else if (G.blessing.z > L.SQUAD_Z + 3){
+        G.blessing.active = false;
+        blessingGrp.visible = false;
+      }
+    } else if (G.frenzyT <= 0){
+      G.blessCD -= dt;
+      if (G.blessCD <= 0){
+        G.blessCD = 14.0;
+        const bx = (Math.random() - 0.5) * 6.4;
+        G.blessing = { active: true, x: bx, z: -27.5, hp: 24 };
+        blessingGrp.position.set(bx, 0, -27.5);
+        blessingGrp.visible = true;
+        showBanner('👸 公主降下黃金祝福光球！射擊或接觸獲得連射！', 2200);
+      }
+    }
+
+    for (const g of G.giants){
+      if (g.shielded){
+        g.shieldTime += dt;
+        if (cfg.quizSeconds === 0 && (g.shieldTime >= 10 || g.shieldDmg >= 200)){
+          g.shielded = false;
+          shadowShieldGrp.visible = false;
+          playShieldBreak();
+          burst(g.x, 3.2, g.z, 0xe8b4ff, 40, 9);
+          showBanner('💥 紫罩能量耗盡破碎！全力攻擊！', 2100);
+        }
+      }
+    }
+  }
+
+  // 多造型巨人前後列陣推進（冰封期間靜止）
   for (let gi=0; gi<G.giants.length; gi++){
     const g=G.giants[gi];
-    g.z += S.bossSpeed*dt;
-    if (gi>0) g.z = Math.min(g.z, G.giants[gi-1].z - 5.2);
+    if (G.freezeT <= 0) g.z += S.bossSpeed*dt;
+    if (gi>0) g.z = Math.min(g.z, G.giants[gi-1].z - 4.3);
     g.grp.position.set(g.x, 0, g.z);
-    g.grp.rotation.y = Math.sin(G.t*1.5 + gi)*0.08;
+    g.grp.rotation.y = G.freezeT > 0 ? 0 : Math.sin(G.t*1.5 + gi)*0.08;
     if (g.z > L.EXIT - 1.5) return endGame(false);
   }
 
-  // 敵兵推進
+  // 敵兵推進（冰封靜止／聖翼號令 1.45 倍速）
   const rad=squadRadius();
+  const rallyMul = (G.rallyT > 0 && G.freezeT <= 0) ? 1.45 : 1;
   for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i];
-    const spdScale = e.kind==='shield' ? 0.85 : 1;
+    if (G.freezeT > 0) continue;
+    const spdScale = (e.kind==='shield' ? 0.85 : 1) * rallyMul;
     if (e.z < L.EXIT) { e.z += S.hordeSpeed*spdScale*dt*(e.z > leadZ+12 ? 1.6 : 1); e.x=Math.max(-3,Math.min(3,e.x)); }
     else { e.z += S.enemySpeed*spdScale*dt*0.7; }
     if (e.z >= L.EXIT) {
@@ -938,6 +1234,19 @@ function step(dt){
     a.z -= 46*dt;
     if (a.z < -95){ a.on=false; continue; }
     if (Math.abs(a.x) > 3.6){ if (a.z < GATE_Z+0.5) a.on=false; continue; }
+    if (G.blessing.active && Math.abs(G.blessing.x - a.x) < 1.3 && Math.abs(G.blessing.z - a.z) < 1.2){
+      a.on = false; G.blessing.hp -= dmg;
+      burst(a.x, 1.8, G.blessing.z, 0xffe066, 3, 4);
+      if (G.blessing.hp <= 0) activateBlessing();
+      continue;
+    }
+    if (G.iceWall.active && Math.abs(a.x - G.iceWall.x) < 2.25 && a.z < G.iceWall.z + 0.65 && a.z > G.iceWall.z - 0.8){
+      a.on = false; G.iceWall.hp -= dmg;
+      setSpriteText(iceWallLbl, String(Math.max(0, Math.ceil(G.iceWall.hp))));
+      burst(a.x, 1.4, G.iceWall.z + 0.3, 0x9beeff, 3, 4);
+      if (G.iceWall.hp <= 0) breakIceWall();
+      continue;
+    }
     let hitP=false;
     for (const p of G.props){ if (Math.abs(p.x-a.x)<1.0 && a.z < p.z+0.8 && a.z > p.z-1.2){ a.on=false; hitP=true; p.hp-=dmg; p.flash=0.06;
         setSpriteText(p.label,String(Math.max(0,Math.ceil(p.hp)))); if (p.hp<=0) breakProp(p); break; } }
@@ -951,9 +1260,9 @@ function step(dt){
     for (let gi=0; gi<G.giants.length; gi++){
       const g=G.giants[gi];
       if (Math.abs(a.x - g.x) < 2.25 && a.z < g.z + 1.2 && a.z > g.z - 2.4){
-        a.on=false; g.hp-=dmg; g.flash=0.06;
-        setSpriteText(g.label, String(Math.max(0,Math.ceil(g.hp))));
-        if (g.hp <= 0) eliminateGiant(gi);
+        a.on=false;
+        if (g.shielded) burst(a.x, 2.2, g.z + 1.0, 0xc084fc, 3, 4);
+        applyGiantDamage(gi, dmg, true);
         break;
       }
     }
@@ -966,6 +1275,7 @@ function render(dt){
   if (G){
     const shown=Math.min(G.army,160);
     const marchMul = G.stagePhase==='combat' ? 1 : 1.75;
+    const isFrozen = G.freezeT > 0;
     for(let i=0;i<shown;i++){ const s=G.slots[i]; const bob=Math.abs(Math.sin(G.t*9*marchMul+i))*0.06;
       armyArt.soldier(camera,blueArmy,i,s.x,s.z,bob); }
     armyArt.flush(blueArmy,shown);
@@ -973,22 +1283,35 @@ function render(dt){
     let nr=0, ns=0;
     for(let i=0;i<G.enemies.length;i++){
       const e=G.enemies[i];
-      const bob=Math.abs(Math.sin(G.t*8+e.ph))*0.08;
+      const bob = isFrozen ? 0 : Math.abs(Math.sin(G.t*8+e.ph))*0.08;
       if (e.kind==='shield' && ns<120) armyArt.soldier(camera,shieldArmy,ns++,e.x,e.z,bob*0.85);
       else if (nr<ENEMY_LIMIT) armyArt.soldier(camera,redArmy,nr++,e.x,e.z,bob);
     }
+    redArmy.units.material.color.setHex(isFrozen ? 0x9beeff : 0xffffff);
+    shieldArmy.units.material.color.setHex(isFrozen ? 0x9beeff : 0xffffff);
     armyArt.flush(redArmy,nr);
     armyArt.flush(shieldArmy,ns);
 
     const showBattleLabels = (quiz?.phase!=='shot' || reducedMotion.matches) && G.stagePhase==='combat';
     G.armyLabel.visible = G.stagePhase==='combat' ? showBattleLabels : true;
     for (const prop of G.props) prop.label.visible = showBattleLabels;
+    iceWallLbl.visible = showBattleLabels && G.iceWall.active;
+    blessingLbl.visible = showBattleLabels && G.blessing.active;
+
+    if (shadowShieldGrp.visible){
+      shadowShieldGrp.rotation.y += dt * 1.4;
+      shadowShieldGrp.userData.cage.rotation.x -= dt * 0.9;
+    }
+    if (blessingGrp.visible){
+      blessingGrp.userData.core.rotation.y += dt * 2.2;
+      blessingGrp.userData.aura.rotation.y -= dt * 2.8;
+    }
 
     for (let gi=0; gi<G.giants.length; gi++){
       const g=G.giants[gi];
       g.label.visible = showBattleLabels;
-      g.fig.pose(camera, (g.z + 32) * 8.5, reducedMotion.matches ? 0 : 1);
-      g.fig.body.material.color.setHex(g.flash>0 ? 0xffc6a1 : 0xffffff);
+      g.fig.pose(camera, (g.z + 32) * 8.5, (reducedMotion.matches || isFrozen) ? 0 : 1);
+      g.fig.body.material.color.setHex(g.flash>0 ? 0xffc6a1 : (isFrozen ? 0x9beeff : 0xffffff));
       g.flash -= dt;
     }
 
@@ -996,6 +1319,7 @@ function render(dt){
     setSpriteText(G.armyLabel,String(G.army));
     G.armyLabel.position.set(G.sx, 2.4+squadRadius()*0.2, L.SQUAD_Z-squadRadius()-0.5);
     for (const side of ['L','R']){ const s=G.gates[side]; if(s.mesh) s.mesh.lab.position.y=2.1+Math.sin(G.t*5)*0.06; }
+    updateBuffBar();
   }
   let ai=0; for (const a of arrows){ if(!a.on) continue; dummy.position.set(a.x,a.y,a.z); dummy.rotation.set(0,0,0); dummy.updateMatrix(); arrowMesh.setMatrixAt(ai++,dummy.matrix); }
   arrowMesh.count=ai; arrowMesh.instanceMatrix.needsUpdate=true;
@@ -1020,8 +1344,10 @@ function clearQuiz(){
 function offerQuiz(){
   if(!cfg.quizSeconds || G.stagePhase!=='combat' || !G.total || G.t<G.quizNext || dragging ||
       Math.abs(G.tx-G.sx)>.12 || G.t-G.lastGate<1.4 || G.enemies.length<3) return;
+  if (G.magma.active){ G.magma.active = false; magmaGrp.visible = false; }
   const q=G.nextMath();
   quiz={q,phase:'question',remaining:cfg.quizSeconds,deadline:null,age:0};
+  $('quizHeading').textContent = G.giants.some(g=>g.shielded) ? '破盾答題大炮' : '答題大炮';
   $('hint').style.display='none';
   $('quizMath').textContent=q.expression+' = ?';
   $('quizClock').textContent=cfg.quizSeconds+' 秒';
@@ -1086,11 +1412,22 @@ function quizTick(now,dt){
       onFinishFire:totalKilled=>{
         document.body.classList.remove('cannon-burst');
         playCannonCooldown();
+        if (G.iceWall.active) breakIceWall('💥 機關炮粉碎寒冰壁壘！');
+        if (G.rallyT > 0) G.rallyT = 0;
         if (G.giants.length > 0){
           for (let gi=0; gi<G.giants.length; gi++){
             const g=G.giants[gi];
             g.z = Math.max(-34, g.z - 1.5);
             g.grp.position.z = g.z;
+            if (g.shielded){
+              g.shielded = false;
+              shadowShieldGrp.visible = false;
+              g.hp = Math.max(25, g.hp - Math.round(g.max * 0.12));
+              setSpriteText(g.label, String(Math.ceil(g.hp)));
+              playShieldBreak();
+              burst(g.x, 3.2, g.z, 0xe8b4ff, 48, 10);
+              showBanner('💥 暗影護罩擊碎！全力進攻！', 2200);
+            }
           }
           floatText('機關炮震退巨人！', 0, 5.4, G.giants[0].z, {size:90,h:1.3,color:'#9efffa',stroke:'#0c3f58',life:1.5});
         }
@@ -1151,7 +1488,7 @@ function start(stage = 0){
   $('hint').style.display='block';
 }
 function endGame(win){
-  clearQuiz();
+  clearQuiz(); clearStageSkills();
   G.over=true; running=false; $('pauseBtn').style.display='none';
   if (win){
     saveRescue(true, G.maxArmy);

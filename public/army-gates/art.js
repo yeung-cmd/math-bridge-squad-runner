@@ -676,5 +676,175 @@ const armyArt = (() => {
       gem.position.set(s * 1.95, 3.35, 0); gem.raycast = () => {}; group.add(gem);
     }
   }
-  return { sprite, marchingFigure, landscape, army, soldier, flush, gateTrim };
+
+  function crystalProp() {
+    const g = new THREE.Group();
+    const core = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.95, 0),
+      new THREE.MeshBasicMaterial({ color: 0x7df3ff, transparent: true, opacity: 0.9 })
+    );
+    core.position.y = 1.25;
+    core.scale.set(0.85, 1.35, 0.85);
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: 0xb8fbff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.55
+    });
+    const shell = new THREE.Mesh(new THREE.OctahedronGeometry(1.18, 0), haloMat);
+    shell.position.y = 1.25;
+    shell.scale.set(0.9, 1.4, 0.9);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.8, 1.25, 24),
+      new THREE.MeshBasicMaterial({ color: 0x85f6ff, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.06;
+    g.add(core, shell, ring);
+    g.userData = { core, shell, ring };
+    return g;
+  }
+
+  function iceWall() {
+    const g = new THREE.Group();
+    const slab = new THREE.Mesh(
+      new THREE.BoxGeometry(4.4, 3.3, 0.65),
+      new THREE.MeshBasicMaterial({ color: 0x7de8ff, transparent: true, opacity: 0.58 })
+    );
+    slab.position.y = 1.65;
+    const edge = new THREE.Mesh(
+      new THREE.BoxGeometry(4.5, 3.4, 0.72),
+      new THREE.MeshBasicMaterial({ color: 0xdffbff, wireframe: true, transparent: true, opacity: 0.65 })
+    );
+    edge.position.y = 1.65;
+    g.add(slab, edge);
+    for (let i = -2; i <= 2; i++) {
+      const spike = new THREE.Mesh(
+        new THREE.ConeGeometry(0.32, 1.15, 5),
+        new THREE.MeshBasicMaterial({ color: 0xaef4ff, transparent: true, opacity: 0.85 })
+      );
+      spike.position.set(i * 0.85, 3.55, 0);
+      g.add(spike);
+    }
+    const bar = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.5, 0.14),
+      new THREE.MeshBasicMaterial({ color: 0xc2fbff, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+    );
+    bar.rotation.x = -Math.PI / 2;
+    bar.position.y = 0.05;
+    g.add(bar);
+    return g;
+  }
+
+  function magmaBoulder() {
+    const g = new THREE.Group();
+    const warn = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.2, 46),
+      new THREE.MeshBasicMaterial({ color: 0xff3b1f, transparent: true, opacity: 0.34, side: THREE.DoubleSide })
+    );
+    warn.rotation.x = -Math.PI / 2;
+    warn.position.set(0, 0.05, 22);
+    const borderL = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.18, 46),
+      new THREE.MeshBasicMaterial({ color: 0xffc145, transparent: true, opacity: 0.75, side: THREE.DoubleSide })
+    );
+    borderL.rotation.x = -Math.PI / 2;
+    borderL.position.set(-1.55, 0.06, 22);
+    const borderR = borderL.clone();
+    borderR.position.x = 1.55;
+    const ball = new THREE.Group();
+    const core = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(1.35, 0),
+      new THREE.MeshBasicMaterial({ color: 0x3b120c })
+    );
+    const glow = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.42, 0),
+      new THREE.MeshBasicMaterial({ color: 0xff6b1a, wireframe: true, transparent: true, opacity: 0.9 })
+    );
+    const hot = new THREE.Mesh(
+      new THREE.SphereGeometry(1.12, 12, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffa629, transparent: true, opacity: 0.75 })
+    );
+    ball.add(core, hot, glow);
+    ball.position.y = 1.35;
+    g.add(warn, borderL, borderR, ball);
+    g.userData = { warn, borderL, borderR, ball };
+    return g;
+  }
+
+  function shadowShield() {
+    const g = new THREE.Group();
+    const shell = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(3.7, 1),
+      new THREE.MeshBasicMaterial({
+        color: 0xa855f7,
+        transparent: true,
+        opacity: 0.34,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    const cage = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(3.85, 1),
+      new THREE.MeshBasicMaterial({
+        color: 0xe8b4ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.58
+      })
+    );
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(3.3, 3.85, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xc084fc,
+        transparent: true,
+        opacity: 0.55,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    ring.rotation.x = Math.PI / 2;
+    g.add(shell, cage, ring);
+    g.userData = { shell, cage, ring };
+    return g;
+  }
+
+  function blessingOrb() {
+    const g = new THREE.Group();
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.9, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffe066 })
+    );
+    core.position.y = 1.8;
+    const aura = new THREE.Mesh(
+      new THREE.OctahedronGeometry(1.38, 0),
+      new THREE.MeshBasicMaterial({
+        color: 0xffb8e6,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    aura.position.y = 1.8;
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(1.0, 1.45, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe680,
+        transparent: true,
+        opacity: 0.65,
+        side: THREE.DoubleSide
+      })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.08;
+    g.add(core, aura, ring);
+    g.userData = { core, aura, ring };
+    return g;
+  }
+
+  return { sprite, marchingFigure, landscape, army, soldier, flush, gateTrim, crystalProp, iceWall, magmaBoulder, shadowShield, blessingOrb };
 })();
