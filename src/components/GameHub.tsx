@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
-import { ArrowRight, Castle, Flag, RadioTower } from 'lucide-react';
+import { ArrowRight, Castle, Flag, RadioTower, Snowflake } from 'lucide-react';
 
 const BridgeGame = lazy(() => import('../App'));
 const RescueGame = lazy(() => import('./RescueGame'));
@@ -41,6 +41,12 @@ export default function GameHub() {
             <span className="text-2xl font-black">數學大軍闖關</span>
             <span className="text-slate-300 text-sm">比較兩道數學門，選出能令士兵最多的一道。</span>
             <span className="game-card-action">進入設定 <ArrowRight size={18} /></span>
+          </a>
+          <a href="./cannon-battle/" className="game-card bg-gradient-to-br from-sky-950 to-slate-900">
+            <span className="game-card-icon"><Snowflake size={44} aria-hidden="true" /></span>
+            <span className="text-2xl font-black">數學神炮大作戰</span>
+            <span className="text-slate-300 text-sm">即時選路增兵，帶領藍軍迎戰紅軍。</span>
+            <span className="game-card-action">開始遊戲 <ArrowRight size={18} /></span>
           </a>
         </div>
       </div>
