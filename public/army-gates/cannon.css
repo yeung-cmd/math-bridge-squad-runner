@@ -36,7 +36,7 @@ html,body{touch-action:auto}
   50% { opacity:.95; }
 }
 @media (prefers-reduced-motion:no-preference) {
-  .cannon-firing #logo,.cannon-firing #lvl,.cannon-firing #score { visibility:hidden; }
+  .cannon-firing #logo,.cannon-firing #lvl,.cannon-firing #score,.cannon-firing #siegeBar { visibility:hidden; }
   .cannon-burst #cannonFlash { animation:cannonBurstPulse .14s steps(2,end) infinite; }
 }
 .cannon-firing #quizCard {
@@ -52,29 +52,36 @@ html,body{touch-action:auto}
   #cannonVignette,#cannonFlash { display:none; }
 }
 
-/* 三章故事卡、通關勳章與中段登場橫幅 */
-.medal-shelf{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 10px;padding:7px 12px;border-radius:12px;background:#fff;border:2px solid #e8d7b4;font-size:13px;font-weight:700;color:#5a4630}
-.medal-icons{display:flex;gap:6px;align-items:center}
-.medal-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;background:#f2ece0;color:#8a7a62;border:1px solid #d9c9a8;font-size:12px;font-weight:700}
-.medal-pill.earned{background:#fff1c4;color:#8a4b00;border-color:#e5a93b;box-shadow:0 1px 0 #d59326}
-.medal-crown{background:linear-gradient(135deg,#ffd86b,#ff9f2e);color:#4f2100;border-color:#c46a06;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:900}
-.opts-chapters .opt{position:relative;padding:10px 4px 8px}
-.opt .medal{position:absolute;top:-7px;right:-4px;font-size:16px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));display:none}
-.opt.has-medal .medal{display:block}
+/* 三層城堡攻堅進度列 */
+#siegeBar{top:8px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(16,38,68,.88);border:2px solid #f4c76d;color:#fff;font-size:12px;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.35);white-space:nowrap}
+.s-node{padding:2px 8px;border-radius:999px;color:#b8c7de;transition:background .2s,color .2s}
+.s-node.done{background:#2fb24c;color:#fff}
+.s-node.active{background:#ff9a1f;color:#fff;box-shadow:0 0 8px #ffb94788}
+.s-sep{color:#7892b5;font-size:11px}
+#giantCount{margin-left:4px;padding:2px 8px;border-radius:999px;background:#3b1e54;border:1px solid #d48cff;color:#ffe6ff;font-size:12px}
+@media (max-width:640px){
+  #siegeBar{top:102px;font-size:11.5px;gap:3px;padding:4px 9px}
+  .s-node{padding:1px 5px}
+}
+
+/* 榮譽列、故事開場卡與破城橫幅 */
+.medal-shelf{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 10px;padding:7px 12px;border-radius:12px;background:#fff;border:2px solid #e8d7b4;font-size:14px;font-weight:900;color:#7a4400}
+.medal-shelf.crowned{background:linear-gradient(135deg,#fff2c2,#ffe085);border-color:#e09a24}
 
 .story-panel{width:min(440px,100%);padding:18px 20px 20px}
 .story-badge{display:inline-block;padding:4px 12px;border-radius:999px;background:#1c4f9c;color:#fff;font-size:13px;font-weight:900;letter-spacing:.5px;margin-bottom:6px}
 .story-title{margin:2px 0 10px;font-size:28px;font-weight:900;color:#e2591b;text-shadow:0 2px 0 #ffd23f}
 .story-cast{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0 12px;padding:10px 12px;border-radius:16px;background:linear-gradient(180deg,#eef6ff 0%,#fff 100%);border:2px solid #d9c499}
-.story-cast img{width:88px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,.22))}
-.story-vs{font-size:20px;font-weight:900;color:#e2591b;background:#ffe7b3;border:2px solid #e0a74a;border-radius:999px;padding:4px 10px}
+.story-cast img{width:86px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,.22))}
+.story-vs{font-size:18px;font-weight:900;color:#1c4f9c;background:#e3f1ff;border:2px solid #7eb6ef;border-radius:999px;padding:4px 10px}
 .story-text{margin:0 0 10px;padding:10px 13px;border-radius:12px;background:#fff;border:2px solid #e8d7b4;color:#4a3926;font-size:15px;line-height:1.55;text-align:left;font-weight:500}
 .story-tip{margin:0 0 6px;padding:8px 11px;border-radius:10px;background:#eaf4ff;border:1.5px solid #96bde6;color:#16468a;font-size:13.5px;line-height:1.45;text-align:left;font-weight:700}
 .story-sub{margin-top:10px;width:100%;padding:10px;border:2px solid #9fb4d4;border-radius:12px;background:#fff;color:#1c4f9c;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
 
-#stageBanner{position:fixed;z-index:8;left:50%;top:14%;transform:translate(-50%,-10px) scale(.95);pointer-events:none;max-width:min(92vw,440px);padding:10px 22px;border-radius:16px;border:3px solid #ffd23f;background:linear-gradient(180deg,#3d124df5,#1c0a2ef7);color:#fff8dc;font-size:clamp(17px,4.5vw,23px);font-weight:900;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 22px #a855ff88;opacity:0;will-change:opacity,transform;transition:opacity .16s ease,transform .16s ease}
+#stageBanner{position:fixed;z-index:8;left:50%;top:10%;transform:translate(-50%,-10px) scale(.95);pointer-events:none;max-width:min(92vw,460px);padding:8px 20px;border-radius:16px;border:3px solid #ffd23f;background:linear-gradient(180deg,#3d124df5,#1c0a2ef7);color:#fff8dc;font-size:clamp(16px,4.2vw,21px);font-weight:900;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 22px #a855ff88;opacity:0;will-change:opacity,transform;transition:opacity .18s ease,transform .18s ease}
 #stageBanner.show{opacity:1;transform:translate(-50%,0) scale(1)}
 
 #endMedal{margin:6px 0 10px;padding:7px 14px;border-radius:12px;background:#fff1c4;border:2px solid #e5a93b;color:#7a3e00;font-size:15px;font-weight:900}
-#endMedal[hidden]{display:none}
-.big[hidden]{display:none}
+#endMedal[hidden],#endCast[hidden],.big[hidden]{display:none}
+#endCast{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0;padding:8px;border-radius:14px;background:linear-gradient(180deg,#fff7dc,#fff);border:2px solid #ebd089}
+#endCast img{width:70px;height:78px;object-fit:contain}

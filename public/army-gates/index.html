@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>數學大軍闖關</title>
+<title>數學大軍：攻城救公主</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -13,7 +13,7 @@
   .hud{position:fixed;pointer-events:none;z-index:5}
   #logo{top:12px;left:12px;font-weight:900;font-size:26px;line-height:1;color:#ffd23f;
     text-shadow:0 3px 0 #b5520b,0 0 2px #000,2px 2px 0 #7a2e00;letter-spacing:1px}
-  #logo small{display:block;font-size:15px;color:#fff;text-shadow:0 2px 0 #1c4f9c;margin-top:4px}
+  #logo small{display:block;font-size:14px;color:#fff;text-shadow:0 2px 0 #1c4f9c;margin-top:4px}
   #lvl{top:66px;left:12px;background:#2f8cf0;color:#fff;font-weight:700;font-size:14px;padding:4px 12px;border-radius:10px;box-shadow:0 3px 0 #1a5bb0}
   #pauseBtn{position:fixed;top:12px;right:12px;z-index:6;width:46px;height:46px;border-radius:50%;border:none;
     background:rgba(255,255,255,.9);font-size:20px;font-weight:900;color:#1c4f9c;box-shadow:0 3px 0 #9fb4d4;display:none}
@@ -22,24 +22,21 @@
   @keyframes bob{from{transform:translate(-50%,0)}to{transform:translate(-50%,-8px)}}
   .overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
     background:rgba(10,24,48,.72);padding:16px}
-  .panel{width:min(420px,100%);max-height:100%;overflow:auto;background:#fff8e8;border-radius:22px;padding:20px 20px 22px;
+  .panel{width:min(430px,100%);max-height:100%;overflow:auto;background:#fff8e8;border-radius:22px;padding:20px 20px 22px;
     box-shadow:0 8px 0 #c99a4a,0 12px 30px rgba(0,0,0,.4);text-align:center}
-  .panel h1{margin:0 0 4px;font-size:32px;font-weight:900;color:#e2591b;text-shadow:0 2px 0 #ffd23f}
+  .panel h1{margin:0 0 4px;font-size:30px;font-weight:900;color:#e2591b;text-shadow:0 2px 0 #ffd23f}
   .panel p{margin:4px 0 12px;color:#5a4630;font-size:15px}
   .row{margin:12px 0}
   .row .lab{font-weight:900;color:#1c4f9c;font-size:16px;margin-bottom:6px;text-align:left}
   .opts{display:flex;gap:8px;flex-wrap:wrap}
-  .opt{flex:1 1 0;min-width:70px;padding:10px 4px;border-radius:12px;border:3px solid #9fb4d4;background:#fff;font-size:17px;font-weight:700;color:#1c4f9c;font-family:inherit}
+  .opt{flex:1 1 0;min-width:70px;padding:10px 4px;border-radius:12px;border:3px solid #9fb4d4;background:#fff;font-size:16px;font-weight:700;color:#1c4f9c;font-family:inherit;cursor:pointer}
   .opt.on{background:#2f8cf0;border-color:#1a5bb0;color:#fff}
-  textarea{width:100%;height:110px;border-radius:12px;border:3px solid #9fb4d4;padding:8px;font-size:16px;font-family:inherit;user-select:text;-webkit-user-select:text}
-  details{text-align:left;margin-top:10px}
-  summary{font-weight:900;color:#1c4f9c;font-size:16px;cursor:pointer}
   .note{font-size:13px;color:#7a6650;margin:6px 0 0;text-align:left}
-  .big{margin-top:16px;width:100%;padding:14px;border:none;border-radius:16px;background:#ff9a1f;color:#fff;font-size:24px;font-weight:900;
-    box-shadow:0 6px 0 #c4600a;font-family:inherit}
+  .big{margin-top:14px;width:100%;padding:14px;border:none;border-radius:16px;background:#ff9a1f;color:#fff;font-size:22px;font-weight:900;
+    box-shadow:0 6px 0 #c4600a;font-family:inherit;cursor:pointer}
   .big:active{transform:translateY(4px);box-shadow:0 2px 0 #c4600a}
   .big.blue{background:#2f8cf0;box-shadow:0 6px 0 #1a5bb0}
-  #log{text-align:left;background:#fff;border-radius:12px;padding:8px 12px;margin-top:10px;font-size:17px;color:#333;max-height:180px;overflow:auto;border:2px solid #e8d7b4}
+  #log{text-align:left;background:#fff;border-radius:12px;padding:8px 12px;margin-top:10px;font-size:16px;color:#333;max-height:160px;overflow:auto;border:2px solid #e8d7b4}
   #log div{padding:2px 0;border-bottom:1px dashed #eee}
   .stat{display:flex;justify-content:space-around;margin:10px 0}
   .stat b{display:block;font-size:28px;color:#e2591b}
@@ -52,7 +49,7 @@
   #feedback.bad{background:#ff8a1f;color:#fff;box-shadow:0 4px 0 #c4600a}
   #score{top:66px;right:12px;background:#fff;color:#1c4f9c;font-weight:900;font-size:15px;padding:4px 12px;border-radius:10px;box-shadow:0 3px 0 #9fb4d4}
   #log .ok{color:#1b7a30} #log .no{color:#c4600a}
-  .lvl-desc{font-size:13px;font-weight:500;display:block;margin-top:2px}
+  .lvl-desc{font-size:12px;font-weight:500;display:block;margin-top:2px}
 </style>
 <style>
   .hub-link{display:block;width:fit-content;padding:6px 2px;color:#24557a;font-size:14px;font-weight:700;text-decoration:none}
@@ -60,14 +57,21 @@
   #lvl.crossbow{background-image:url(art/crossbow.webp)}
   #hint{font-size:clamp(13px,3.5vw,22px)}
 </style>
-<link rel="stylesheet" href="./cannon.css?v=5">
+<link rel="stylesheet" href="./cannon.css?v=6">
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="cannonVignette" aria-hidden="true"></div>
 <div id="cannonFlash" aria-hidden="true"></div>
-<div class="hud" id="logo">數學大軍<small id="lvlName">第一章・碧海橋頭</small></div>
+<div class="hud" id="logo">數學大軍<small id="lvlName">第一埲牆・外城橋頭</small></div>
 <div class="hud" id="lvl">武器：木弓</div>
+<div class="hud" id="siegeBar" aria-label="攻城進度">
+  <span class="s-node active" data-s="0">🏰 外城</span><span class="s-sep">▸</span>
+  <span class="s-node" data-s="1">🔥 中城</span><span class="s-sep">▸</span>
+  <span class="s-node" data-s="2">👑 內城</span><span class="s-sep">▸</span>
+  <span class="s-node" data-s="3">👸 公主</span>
+  <span id="giantCount">巨人 1/1</span>
+</div>
 <div class="hud" id="score">正確 0 / 0</div>
 <button id="pauseBtn">❚❚</button>
 <div class="hud" id="hint">◀ 拖動軍隊到左／右，或直接點選門 ▶</div>
@@ -85,21 +89,14 @@
 <div class="overlay" id="menu">
   <div class="panel">
     <a class="hub-link" href="../">← 返回遊戲選擇</a>
-    <h1>數學大軍闖關</h1>
-    <p>左右兩邊會出現「＋」「－」「×」門，選出令軍隊最多的一道！<br>中路射爆炸藥桶可炸走敵兵，射爆寶箱有援軍。<br>選錯門，首領會回復體力！</p>
-    <div class="medal-shelf" id="medalShelf">
-      <span id="medalSummary">通關勳章：0 / 3</span>
-      <span class="medal-icons">
-        <span class="medal-pill" data-medal="1">🥉 一章</span>
-        <span class="medal-pill" data-medal="2">🥈 二章</span>
-        <span class="medal-pill" data-medal="3">👑 三章</span>
-      </span>
-    </div>
-    <div class="row"><div class="lab">故事章節</div>
-      <div class="opts opts-chapters" data-k="level">
-        <button class="opt on" data-v="1"><span class="medal" aria-hidden="true">🥉</span>第一章<span class="lvl-desc">碧海橋頭・加減</span></button>
-        <button class="opt" data-v="2"><span class="medal" aria-hidden="true">🥈</span>第二章<span class="lvl-desc">烽火圍城・巨人</span></button>
-        <button class="opt" data-v="3"><span class="medal" aria-hidden="true">👑</span>第三章<span class="lvl-desc">暗夜魔王・雙首領</span></button>
+    <h1>數學大軍：攻城救公主</h1>
+    <p>由外圍一路攻入內城三道城牆！<br>選出令軍隊最多的數學門，射倒守護各牆的巨人，最終救出城堡公主！</p>
+    <div class="medal-shelf" id="medalShelf">🛡️ 尚未救出王國公主・準備攻城！</div>
+    <div class="row"><div class="lab">數學題型</div>
+      <div class="opts" data-k="mathMode">
+        <button class="opt on" data-v="prog">漸進升級<span class="lvl-desc">一牆加減・二三牆含乘</span></button>
+        <button class="opt" data-v="addsub">加減混合<span class="lvl-desc">全三牆只出加減</span></button>
+        <button class="opt" data-v="mul">加減乘混合<span class="lvl-desc">全三牆含乘法</span></button>
       </div></div>
     <div class="row"><div class="lab">門上的數字</div>
       <div class="opts" data-k="range">
@@ -107,11 +104,11 @@
         <button class="opt on" data-v="20">20以內</button>
         <button class="opt" data-v="50">50以內</button>
       </div></div>
-    <div class="row"><div class="lab">難度</div>
+    <div class="row"><div class="lab">攻城難度</div>
       <div class="opts" data-k="speed">
-        <button class="opt on" data-v="easy">容易<span class="lvl-desc">敵兵少・門停3.5秒</span></button>
+        <button class="opt on" data-v="easy">容易<span class="lvl-desc">門停3.5秒</span></button>
         <button class="opt" data-v="mid">普通<span class="lvl-desc">門停2.5秒</span></button>
-        <button class="opt" data-v="hard">困難<span class="lvl-desc">敵兵多・門停2秒</span></button>
+        <button class="opt" data-v="hard">困難<span class="lvl-desc">敵強・門停2秒</span></button>
       </div></div>
     <div class="row"><div class="lab">答題大炮</div>
       <div class="opts" data-k="quizSeconds">
@@ -119,25 +116,25 @@
         <button class="opt on" data-v="5">5 秒</button>
         <button class="opt" data-v="3">3 秒</button>
       </div>
-      <p class="note">先選一道門。大炮出題時，限時答對，炮台便會展開機關掃射，擊退場上一半敵兵。</p>
+      <p class="note">大炮出題時限時答對，機關炮會掃射場上一半敵兵並震退巨人。</p>
     </div>
-    <button class="big" id="startBtn">開始遊戲</button>
+    <button class="big" id="startBtn">開始攻城</button>
   </div>
 </div>
 
 <div class="overlay" id="storyOverlay" style="display:none">
   <div class="panel story-panel">
-    <span class="story-badge" id="storyBadge">第一章</span>
-    <h2 class="story-title" id="storyTitle">碧海橋頭</h2>
+    <span class="story-badge">城堡攻堅任務・三道城牆</span>
+    <h2 class="story-title">攻破三牆・救出公主</h2>
     <div class="story-cast">
-      <img id="storyHero" src="./art/commander.webp" alt="藍甲指揮官">
-      <span class="story-vs">VS</span>
-      <img id="storyEnemy" src="./art/warlord.webp" alt="敵軍首領">
+      <img src="./art/commander.webp" alt="藍甲指揮官">
+      <span class="story-vs">營救</span>
+      <img src="./art/princess.webp" alt="王國公主">
     </div>
-    <p class="story-text" id="storyText"></p>
-    <p class="story-tip" id="storyTip"></p>
-    <button class="big" id="storyGoBtn">立即出擊！</button>
-    <button class="story-sub" id="storyBackBtn">返回選擇章節</button>
+    <p class="story-text">公主被困在城堡最深處！請先打敗守在外圍的<strong>赤角巨魔</strong>，接著連破中城<strong>寒冰與聖翼雙巨人</strong>、內城<strong>熔岩／聖翼／暗夜巨王三巨頭</strong>，同一畫面長驅直入救出公主！</p>
+    <p class="story-tip">攻城秘訣：多選令軍隊最多的數學門升級武器；遇到敵群逼近時，答對「答題大炮」即可啟動機關掃射！</p>
+    <button class="big" id="storyGoBtn">全軍出擊！</button>
+    <button class="story-sub" id="storyBackBtn">返回調整設定</button>
   </div>
 </div>
 
@@ -152,6 +149,11 @@
 <div class="overlay" id="endMenu" style="display:none">
   <div class="panel">
     <h1 id="endTitle">勝利！</h1>
+    <div id="endCast" hidden>
+      <img src="./art/commander.webp" alt="藍甲指揮官">
+      <span style="font-size:26px">👑</span>
+      <img src="./art/princess.webp" alt="王國公主">
+    </div>
     <div id="endMedal" hidden></div>
     <div class="stat">
       <div><b id="stMax">0</b><span>最多士兵</span></div>
@@ -161,117 +163,68 @@
     <div class="lab" style="text-align:left;font-weight:900;color:#1c4f9c">今局的選擇</div>
     <div id="log"></div>
     <section id="quizReview" hidden><h2>即時問答</h2><p id="quizScore"></p><ul id="quizErrors"></ul></section>
-    <button class="big blue" id="nextChapterBtn" hidden>進入下一章</button>
-    <button class="big blue" id="againBtn">再玩一次</button>
+    <button class="big blue" id="retryStageBtn" hidden>重試本道城牆</button>
+    <button class="big blue" id="againBtn">由外城重新開始</button>
     <button class="big" id="homeBtn">返回主頁</button>
   </div>
 </div>
 
 <script src="./vendor/three-r128.min.js"></script>
-<script src="./art.js?v=2"></script>
-<script src="./cannon.js?v=5"></script>
+<script src="./art.js?v=3"></script>
+<script src="./cannon.js?v=6"></script>
 <script>
 (() => {
 'use strict';
-// ---------------- 設定 ----------------
-const CHAPTERS = {
-  '1': {
-    badge: '第一章・晴天守橋',
-    title: '碧海橋頭',
-    hudName: '第一章・碧海橋頭',
-    story: '紅角先鋒突襲碧海石橋！指揮官，請帶領弓箭隊穿過最有利的數學大門，壯大軍團擊退先鋒戰將！',
-    tip: '戰術重點：左右比較加減門，答對大炮可展開機關掃射擊退一半敵兵！',
-    enemyImg: './art/warlord.webp',
-    shieldRate: 0,
-    giantActive: false,
-    giantGap: 11,
-    dualBoss: false,
-    quizChoices: 2,
-    bossScale: 1.0,
-    medalName: '🥉 第一章碧海銅盾勳章'
-  },
-  '2': {
-    badge: '第二章・黃昏圍城',
-    title: '烽火圍城',
-    hudName: '第二章・烽火圍城',
-    story: '黃昏烽火燃起！敵方派出左右護衛巨人與重裝盾兵壓境，隨時從橋側召喚增援包抄我軍！',
-    tip: '戰術重點：盾兵較耐打；答對大炮可掃射敵軍並壓制雙巨人 7 秒！',
-    enemyImg: './art/giant.webp',
-    shieldRate: 0.25,
-    giantActive: true,
-    giantGap: 10.5,
-    dualBoss: false,
-    quizChoices: 2,
-    bossScale: 1.2,
-    medalName: '🥈 第二章烽火銀劍勳章'
-  },
-  '3': {
-    badge: '第三章・暗夜終戰',
-    title: '暗夜魔王',
-    hudName: '第三章・暗夜魔王',
-    story: '黑夜雷電交加，城堡傳送門即將開啟！打倒先鋒魔將後，更強大的暗夜巨王將從後方破門殺出！',
-    tip: '戰術重點：留意止損雙減門與複合乘法門；答題大炮升級為三選一！',
-    enemyImg: './art/overlord.webp',
-    shieldRate: 0.35,
-    giantActive: true,
-    giantGap: 9.2,
-    dualBoss: true,
-    quizChoices: 3,
-    bossScale: 1.3,
-    medalName: '👑 第三章暗夜金冠勳章'
-  }
-};
-const cfg = { level:'1', range:20, speed:'easy', quizSeconds:5 };
-try { const s = JSON.parse(localStorage.getItem('armyMathCfg2')||'null'); if (s) Object.assign(cfg, s); } catch(e){}
-if (!['1','2','3'].includes(String(cfg.level))) cfg.level='1';
-cfg.level = String(cfg.level);
+// ---------------- 設定與紀錄 ----------------
+const cfg = { mathMode:'prog', range:20, speed:'easy', quizSeconds:5 };
+try { const s = JSON.parse(localStorage.getItem('armyMathCfg3')||'null'); if (s) Object.assign(cfg, s); } catch(e){}
+if (!['prog','addsub','mul'].includes(cfg.mathMode)) cfg.mathMode='prog';
+if (![10,20,50].includes(cfg.range)) cfg.range=20;
 if (![0,3,5].includes(cfg.quizSeconds)) cfg.quizSeconds=5;
 if (!['easy','mid','hard'].includes(cfg.speed)) cfg.speed='easy';
-function loadMedals(){
-  try { const m=JSON.parse(localStorage.getItem('armyMathMedals1')||'{}'); return m && typeof m==='object' ? m : {}; }
-  catch(e){ return {}; }
+
+function loadRescue(){
+  try { return JSON.parse(localStorage.getItem('armyPrincessRescue1')||'null') || { rescued:0, bestArmy:0 }; }
+  catch(e){ return { rescued:0, bestArmy:0 }; }
 }
-let medals = loadMedals();
-function saveMedal(lv){
-  medals[lv] = true;
-  try { localStorage.setItem('armyMathMedals1', JSON.stringify(medals)); } catch(e){}
-  renderMedals();
+let rescueStat = loadRescue();
+function saveRescue(won, maxArmy){
+  if (won) rescueStat.rescued = (rescueStat.rescued || 0) + 1;
+  rescueStat.bestArmy = Math.max(rescueStat.bestArmy || 0, maxArmy);
+  try { localStorage.setItem('armyPrincessRescue1', JSON.stringify(rescueStat)); } catch(e){}
+  renderRescueShelf();
 }
-function renderMedals(){
-  const count=['1','2','3'].filter(k=>medals[k]).length;
-  const summary=document.getElementById('medalSummary');
-  if (summary) {
-    if (count===3) summary.innerHTML='<span class="medal-crown">👑 王國守護者（3 / 3）</span>';
-    else summary.textContent=`通關勳章：${count} / 3`;
+function renderRescueShelf(){
+  const shelf = document.getElementById('medalShelf');
+  if (!shelf) return;
+  if (rescueStat.rescued > 0) {
+    shelf.classList.add('crowned');
+    shelf.textContent = `👑 已成功救出公主 ${rescueStat.rescued} 次（最多士兵紀錄：${rescueStat.bestArmy}）`;
+  } else {
+    shelf.classList.remove('crowned');
+    shelf.textContent = '🛡️ 尚未救出王國公主・連破三牆即可營救！';
   }
-  document.querySelectorAll('.medal-pill').forEach(el=>{
-    el.classList.toggle('earned', !!medals[el.dataset.medal]);
-  });
-  document.querySelectorAll('.opts-chapters .opt').forEach(btn=>{
-    btn.classList.toggle('has-medal', !!medals[btn.dataset.v]);
-  });
 }
-function syncOptionButtons(){
-  document.querySelectorAll('.opts').forEach(g => {
-    const k = g.dataset.k;
-    g.querySelectorAll('.opt').forEach(b => {
-      b.classList.toggle('on', String(cfg[k]) === b.dataset.v);
-      b.onclick = () => { g.querySelectorAll('.opt').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-        cfg[k] = (k==='range' || k==='quizSeconds') ? +b.dataset.v : b.dataset.v; };
-    });
+document.querySelectorAll('.opts').forEach(g => {
+  const k = g.dataset.k;
+  g.querySelectorAll('.opt').forEach(b => {
+    b.classList.toggle('on', String(cfg[k]) === b.dataset.v);
+    b.onclick = () => { g.querySelectorAll('.opt').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+      cfg[k] = (k==='range' || k==='quizSeconds') ? +b.dataset.v : b.dataset.v; };
   });
-}
-syncOptionButtons();
-renderMedals();
+});
+renderRescueShelf();
+
 const SPEEDS = {
-  easy:{ life:3.5, horde:60,  refill:3, hordeSpeed:0.6, enemySpeed:1.1, bossSpeed:0.15, bossHP:2500, heal:40 },
-  mid: { life:2.5, horde:105, refill:6,   hordeSpeed:0.8, enemySpeed:1.4, bossSpeed:0.16, bossHP:3200, heal:80 },
-  hard:{ life:2.0, horde:160, refill:12,   hordeSpeed:1.0, enemySpeed:1.8, bossSpeed:0.17, bossHP:4000, heal:120 }
+  easy:{ life:3.5, horde:54,  refill:2.8, hordeSpeed:0.58, enemySpeed:1.05, bossSpeed:0.145, bossHP:2400, heal:40 },
+  mid: { life:2.5, horde:92,  refill:5.2, hordeSpeed:0.78, enemySpeed:1.35, bossSpeed:0.155, bossHP:3000, heal:80 },
+  hard:{ life:2.0, horde:136, refill:9.5, hordeSpeed:0.96, enemySpeed:1.7,  bossSpeed:0.165, bossHP:3700, heal:120 }
 };
-const ENEMY_LIMIT=260;
+const ENEMY_LIMIT=240;
 const FIRST_QUIZ_AT=6;
 const QUIZ_GAP=[8,11];
 const R = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+
 // ---------------- 音效 ----------------
 let actx=null, noiseBuf=null;
 function getNoiseBuffer(){
@@ -295,74 +248,56 @@ function playCannonSpinUp(){
   if(!actx) return;
   const now=actx.currentTime;
   const o=actx.createOscillator(), g=actx.createGain();
-  o.type='sawtooth';
-  o.frequency.setValueAtTime(140,now);
-  o.frequency.exponentialRampToValueAtTime(440,now+0.26);
-  g.gain.setValueAtTime(0.02,now);
-  g.gain.linearRampToValueAtTime(0.09,now+0.22);
-  g.gain.exponentialRampToValueAtTime(0.0001,now+0.28);
+  o.type='sawtooth'; o.frequency.setValueAtTime(140,now); o.frequency.exponentialRampToValueAtTime(440,now+0.26);
+  g.gain.setValueAtTime(0.02,now); g.gain.linearRampToValueAtTime(0.09,now+0.22); g.gain.exponentialRampToValueAtTime(0.0001,now+0.28);
   o.connect(g); g.connect(actx.destination); o.start(now); o.stop(now+0.28);
 }
 function playGatlingBeat(){
   if(!actx) return;
   const now=actx.currentTime;
   const o=actx.createOscillator(), g=actx.createGain();
-  o.type='triangle';
-  o.frequency.setValueAtTime(105,now);
-  o.frequency.exponentialRampToValueAtTime(42,now+0.055);
-  g.gain.setValueAtTime(0.08,now);
-  g.gain.exponentialRampToValueAtTime(0.0001,now+0.06);
+  o.type='triangle'; o.frequency.setValueAtTime(105,now); o.frequency.exponentialRampToValueAtTime(42,now+0.055);
+  g.gain.setValueAtTime(0.08,now); g.gain.exponentialRampToValueAtTime(0.0001,now+0.06);
   o.connect(g); g.connect(actx.destination); o.start(now); o.stop(now+0.062);
-
   const buf=getNoiseBuffer();
   if(buf){
-    const src=actx.createBufferSource();
-    src.buffer=buf;
-    const bp=actx.createBiquadFilter();
-    bp.type='bandpass'; bp.frequency.value=1250; bp.Q.value=1.2;
-    const ng=actx.createGain();
-    ng.gain.setValueAtTime(0.05,now);
-    ng.gain.exponentialRampToValueAtTime(0.0001,now+0.045);
-    src.connect(bp); bp.connect(ng); ng.connect(actx.destination);
-    src.start(now); src.stop(now+0.05);
+    const src=actx.createBufferSource(); src.buffer=buf;
+    const bp=actx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1250; bp.Q.value=1.2;
+    const ng=actx.createGain(); ng.gain.setValueAtTime(0.05,now); ng.gain.exponentialRampToValueAtTime(0.0001,now+0.045);
+    src.connect(bp); bp.connect(ng); ng.connect(actx.destination); src.start(now); src.stop(now+0.05);
   }
 }
 function playCannonCooldown(){
   if(!actx) return;
   const now=actx.currentTime;
   const o=actx.createOscillator(), g=actx.createGain();
-  o.type='sine';
-  o.frequency.setValueAtTime(220,now);
-  o.frequency.exponentialRampToValueAtTime(52,now+0.34);
-  g.gain.setValueAtTime(0.11,now);
-  g.gain.exponentialRampToValueAtTime(0.0001,now+0.36);
+  o.type='sine'; o.frequency.setValueAtTime(220,now); o.frequency.exponentialRampToValueAtTime(52,now+0.34);
+  g.gain.setValueAtTime(0.11,now); g.gain.exponentialRampToValueAtTime(0.0001,now+0.36);
   o.connect(g); g.connect(actx.destination); o.start(now); o.stop(now+0.37);
 }
-function playBossEntrance(){
+function playWallBreach(){
   if(!actx) return;
-  const now=actx.currentTime;
-  [110, 146.8, 164.8, 220].forEach((freq,idx)=>{
-    const o=actx.createOscillator(), g=actx.createGain();
-    o.type=idx===0?'sawtooth':'triangle';
-    o.frequency.setValueAtTime(freq,now);
-    o.frequency.exponentialRampToValueAtTime(freq*0.72,now+0.75);
-    g.gain.setValueAtTime(idx===0?0.09:0.055,now);
-    g.gain.exponentialRampToValueAtTime(0.0001,now+0.78);
-    o.connect(g); g.connect(actx.destination); o.start(now); o.stop(now+0.8);
-  });
+  [196, 246.9, 293.7, 392].forEach((f,i)=>setTimeout(()=>beep(f,0.22,'triangle',0.075), i*95));
+}
+function playVictoryFanfare(){
+  if(!actx) return;
+  [523.25, 659.25, 783.99, 1046.5].forEach((f,i)=>setTimeout(()=>beep(f,0.28,'triangle',0.085), i*130));
 }
 
-// ---------------- Three.js 場景 ----------------
+// ---------------- Three.js 場景與 3D 角色預建 ----------------
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
 renderer.outputEncoding=THREE.sRGBEncoding;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9ec7c7);
-scene.fog = new THREE.Fog(0x9ec7c7, 54, 118);
-const camera = new THREE.PerspectiveCamera(60, 1, 0.5, 300);
-camera.position.set(0, 21, 17);
-camera.lookAt(0, 0, -9);
+scene.fog = new THREE.Fog(0x9ec7c7, 62, 152);
+const camera = new THREE.PerspectiveCamera(60, 1, 0.5, 320);
+const HOME_CAM_POS = new THREE.Vector3(0, 21, 17);
+const HOME_CAM_LOOK = new THREE.Vector3(0, 0, -9);
+const lookTmp = new THREE.Vector3();
+camera.position.copy(HOME_CAM_POS);
+camera.lookAt(HOME_CAM_LOOK);
 function resize(){
   const w=innerWidth, h=innerHeight;
   renderer.setSize(w,h,false);
@@ -373,16 +308,52 @@ function resize(){
 }
 addEventListener('resize', resize); resize();
 
-const hemi = new THREE.HemisphereLight(0xffffff, 0x6a5a48, 0.62); scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-10, 30, 15); scene.add(sun);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x6a5a48, 0.65); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 0.58); sun.position.set(-10, 30, 15); scene.add(sun);
 
 const L = { X:-6.4, C:0, RX:6.4, SIDE_W:4.4, CEN_W:6.8, EXIT:-4, SQUAD_Z:4.2 };
 const lam = c => new THREE.MeshLambertMaterial({color:c});
 const cannon = createQuizCannon(scene,camera);
 const landscape = armyArt.landscape(scene,L,{hemi,sun});
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const warlordFigure = armyArt.marchingFigure('warlord',5.8,6.4);
-const overlordFigure = armyArt.marchingFigure('overlord',6.3,7.0);
+
+// 預先建立所有 3D 巨人與公主模型
+const warlordFig = armyArt.marchingFigure('warlord', 5.8, 6.4);
+const frostFig   = armyArt.marchingFigure('frost_giant', 6.0, 6.6);
+const wingFig    = armyArt.marchingFigure('giant', 5.9, 6.5);
+const lavaFig    = armyArt.marchingFigure('lava_giant', 6.1, 6.7);
+const overlordFig= armyArt.marchingFigure('overlord', 6.5, 7.2);
+const princessFig= armyArt.marchingFigure('princess', 3.6, 4.4);
+
+const STAGES = [
+  {
+    name: '第一埲牆・外城橋頭',
+    shieldRate: 0,
+    hordeMul: 0.85,
+    giants: [
+      { fig: warlordFig, name: '赤角巨魔', hpMul: 0.72, x: 0, z: -24.0 }
+    ]
+  },
+  {
+    name: '第二埲牆・烈焰甕城',
+    shieldRate: 0.25,
+    hordeMul: 1.0,
+    giants: [
+      { fig: frostFig, name: '寒冰巨人', hpMul: 0.62, x: -1.35, z: -22.5 },
+      { fig: wingFig,  name: '聖翼巨人', hpMul: 0.72, x: 1.35,  z: -28.5 }
+    ]
+  },
+  {
+    name: '第三埲牆・王座內城',
+    shieldRate: 0.35,
+    hordeMul: 1.15,
+    giants: [
+      { fig: lavaFig,     name: '熔岩巨人', hpMul: 0.60, x: -1.55, z: -21.0 },
+      { fig: wingFig,     name: '聖翼巨人', hpMul: 0.68, x: 1.55,  z: -26.5 },
+      { fig: overlordFig, name: '暗夜巨王', hpMul: 0.90, x: 0,     z: -31.8 }
+    ]
+  }
+];
 
 // ---------------- 文字精靈 ----------------
 function drawLabel(cv, text, o){
@@ -407,7 +378,6 @@ function textSprite(text, o={}){
   const sp=new THREE.Sprite(mat); const h=o.h||1.2; sp.scale.set(h*w/cv.height, h, 1);
   sp.renderOrder=10; sp.userData={cv, o, text}; return sp;
 }
-// 數字標籤：只標記需要更新，每格畫面最多重畫一次（避免每箭重建貼圖）
 const dirtyLabels=new Set();
 function setSpriteText(sp, text){ if (sp.userData.text===text) return; sp.userData.text=text; dirtyLabels.add(sp); }
 function flushLabels(){ dirtyLabels.forEach(sp=>{ drawLabel(sp.userData.cv, sp.userData.text, sp.userData.o); sp.material.map.needsUpdate=true; }); dirtyLabels.clear(); }
@@ -437,36 +407,43 @@ function burst(x,y,z,color,n=10,spd=4){
   pMesh.instanceColor.needsUpdate=true;
 }
 
-// ---------------- 浮動文字 ----------------
+// ---------------- 浮動文字與橫幅 ----------------
 const floats=[];
 function floatText(text,x,y,z,o={}){ const sp=textSprite(text,o); sp.position.set(x,y,z); scene.add(sp); floats.push({sp,life:o.life||1.3,vy:o.vy||2.2}); }
-
-// ---------------- 巨人、首領、武器寶箱 ----------------
-function weaponCanvasSprite(level){
-  return armyArt.sprite(level%2===0 ? 'bow' : 'crossbow',3.4,3.4);
+let bannerTimer=null;
+function showBanner(text, ms=2400){
+  const el=document.getElementById('stageBanner');
+  if(!el) return;
+  el.textContent=text;
+  el.classList.add('show');
+  clearTimeout(bannerTimer);
+  bannerTimer=setTimeout(()=>el.classList.remove('show'), ms);
 }
 
 // ---------------- 選擇門 ----------------
-// 門的數值：{op:'+'|'−'|'×', n}
 const apply = (army, g) => g.op==='+' ? army+g.n : g.op==='−' ? army-g.n : army*g.n;
 const gText = g => g.label || (g.op + g.n);
+function activeOpMode(){
+  if (cfg.mathMode==='addsub') return 'addsub';
+  if (cfg.mathMode==='mul') return 'mul';
+  return (!G || G.stageIdx===0) ? 'addsub' : (G.stageIdx===1 ? 'mul' : 'adv');
+}
 function genGate(other){
-  const M=cfg.range, lv=cfg.level;
+  const M=cfg.range, mode=activeOpMode();
   const army = G ? G.army : 0;
   const plus = () => ({op:'+', n:R(1,M)});
   const minus= () => ({op:'−', n:R(1,M)});
-  // 乘法：士兵少（50或以下）時才出「×2／×3」；士兵多時改為「+3×4」（加 3 組，每組 4 人），乘數保持在乘數表範圍內
   const fmax = M<=10 ? 5 : 9;
   const timesArmy = () => ({op:'×', n: (army*3>150 || Math.random()<0.65) ? 2 : 3});
   const groupGate = (sign) => { let a=R(2,fmax), b=R(2,fmax); if (M<=20) while(a*b>M*2){ a=R(2,fmax); b=R(2,fmax); }
     return {op:sign, n:a*b, label:`${sign}${a}×${b}`}; };
   let g;
-  if (lv==='3'){
+  if (mode==='adv'){
     const r=Math.random();
     const mulOK = army <= 50;
-    if (!other && army>=18 && r<0.28) {
+    if (!other && army>=18 && r<0.25) {
       g = Math.random()<0.4 ? groupGate('−') : minus();
-    } else if (other && other.op==='−' && army>=18 && r<0.38) {
+    } else if (other && other.op==='−' && army>=18 && r<0.36) {
       g = Math.random()<0.4 ? groupGate('−') : minus();
     } else if (other && (other.op==='×' || other.label)) {
       g = r<0.45 ? groupGate('+') : (r<0.75 ? plus() : minus());
@@ -475,7 +452,7 @@ function genGate(other){
     } else {
       g = r<0.78 ? plus() : minus();
     }
-  } else if (lv==='2'){
+  } else if (mode==='mul'){
     const r=Math.random();
     const mulOK = army <= 50;
     if (other && (other.op==='×' || other.label)) g = r<0.55 ? plus() : minus();
@@ -502,91 +479,139 @@ function makeGateMesh(g){
   panel.position.y=1.9; grp.add(panel);
   const rim=new THREE.Mesh(new THREE.BoxGeometry(3.9,0.3,0.4), lam(c2)); rim.position.y=3.1; grp.add(rim);
   const lab=textSprite(gText(g),{size:120,h:g.label?1.6:1.9,stroke:st}); lab.position.set(0,2.1,0.4); grp.add(lab);
-  // 倒數條
   const barBg=new THREE.Mesh(new THREE.BoxGeometry(3.4,0.22,0.1), new THREE.MeshBasicMaterial({color:0x222222})); barBg.position.set(0,0.55,0.3); grp.add(barBg);
   const bar=new THREE.Mesh(new THREE.BoxGeometry(3.4,0.22,0.12), new THREE.MeshBasicMaterial({color:0xffd23f})); bar.position.set(0,0.55,0.32); grp.add(bar);
   return {grp,panel,bar,lab};
 }
 
-// ---------------- 遊戲狀態 ----------------
+// ---------------- 遊戲狀態與三層攻堅流程 ----------------
 const WEAPONS=['木弓','金弓','十字弩','黃金十字弩','神射弩'];
 let G=null, running=false, paused=false;
 const SIDES={L:{x:-6.4}, R:{x:6.4}};
 const GATE_Z = -4.2;
 
+function clearGate(side){ const s=G.gates[side]; if(s.mesh){ scene.remove(s.mesh.grp); s.mesh=null; } s.g=null; }
+function clearWorldActors(){
+  if (!G) return;
+  clearGate('L'); clearGate('R');
+  G.props.forEach(p=>scene.remove(p.grp)); G.props.length=0;
+  G.giants.forEach(g=>scene.remove(g.grp)); G.giants.length=0;
+  if (princessFig.group.parent) princessFig.group.parent.remove(princessFig.group);
+  for (const a of arrows) a.on=false;
+}
 function enemyHP(kind){ return kind==='shield' ? 3 : 1; }
 function pushEnemy(x,z,kind){
   if (G.enemies.length>=ENEMY_LIMIT) return;
-  const k = kind || (Math.random() < G.chapter.shieldRate ? 'shield' : 'raider');
-  G.enemies.push({x, z, ph:Math.random()*6, hp:enemyHP(k), kind:k, flash:0});
+  const st = STAGES[G.stageIdx];
+  const k = kind || (Math.random() < st.shieldRate ? 'shield' : 'raider');
+  G.enemies.push({x, z, ph:Math.random()*6, hp:enemyHP(k), kind:k});
 }
-let bannerTimer=null;
-function showBanner(text, ms=2400){
-  const el=document.getElementById('stageBanner');
-  if(!el) return;
-  el.textContent=text;
-  el.classList.add('show');
-  clearTimeout(bannerTimer);
-  bannerTimer=setTimeout(()=>el.classList.remove('show'), ms);
-}
-function summonOverlord(){
-  G.bossPhase=2;
-  burst(0,3.5,G.boss.z,0xff9a3a,55,10);
-  burst(0,4.5,G.boss.z,0xb066ff,35,8);
-  G.boss.grp.remove(G.boss.fig.group);
-  G.boss.grp.add(overlordFigure.group);
-  G.boss.fig=overlordFigure;
-  const p2HP=Math.round(G.S.bossHP*G.chapter.bossScale*0.70);
-  G.boss.hp=p2HP; G.boss.max=p2HP;
-  G.boss.z=-26.5; G.boss.grp.position.z=-26.5; G.boss.flash=0.25;
-  G.boss.label.position.set(0,7.5,0);
-  setSpriteText(G.boss.label,String(p2HP));
-  landscape.triggerPortalFlash(1.8);
-  playBossEntrance();
-  showBanner('先鋒擊破！暗夜巨王衝出城門！', 2800);
-  document.getElementById('lvlName').textContent='第三章・暗夜巨王（終戰）';
-  for(let i=0;i<6;i++){
-    pushEnemy(-2.6+i*1.04+(Math.random()-.5)*0.2, -23.5+Math.random()*1.4, i<3?'shield':'raider');
+function updateSiegeBar(){
+  const idx = G ? G.stageIdx : 0;
+  const phase = G ? G.stagePhase : 'combat';
+  document.querySelectorAll('#siegeBar .s-node').forEach(el=>{
+    const s = +el.dataset.s;
+    el.classList.toggle('done', phase==='rescue' ? s<3 : s<idx);
+    el.classList.toggle('active', phase==='rescue' ? s===3 : s===idx);
+  });
+  const gc = document.getElementById('giantCount');
+  if (!G) return;
+  if (phase==='rescue') gc.textContent = '已救出公主！';
+  else if (phase==='advance') gc.textContent = '全軍推進中…';
+  else {
+    const total = STAGES[idx].giants.length;
+    gc.textContent = `巨人 ${G.giants.length}/${total}`;
   }
-}
-
-function clearGate(side){ const s=G.gates[side]; if(s.mesh){ scene.remove(s.mesh.grp); s.mesh=null; } s.g=null; }
-function newGame(){
-  clearQuiz(); dragging=false;
-  clearTimeout(bannerTimer);
-  const bannerEl=document.getElementById('stageBanner'); if(bannerEl) bannerEl.classList.remove('show');
-  if (G){ clearGate('L'); clearGate('R'); G.props.forEach(p=>scene.remove(p.grp)); scene.remove(G.boss.grp); scene.remove(G.armyLabel);
-    floats.forEach(f=>scene.remove(f.sp)); floats.length=0; }
-  const chapter = CHAPTERS[cfg.level] || CHAPTERS['1'];
-  landscape.setTheme(cfg.level);
-  landscape.reset();
-  const S=SPEEDS[cfg.speed];
-  const totalBossHP = Math.round(S.bossHP * chapter.bossScale);
-  const bossHP = chapter.dualBoss ? Math.round(totalBossHP * 0.40) : totalBossHP;
-  const startArmy = cfg.range*2;
-  G={ S, chapter, bossPhase:1, t:0, army:startArmy, maxArmy:startArmy, sx:0, tx:0, level:0, volley:0, spawn:0, log:[], good:0, total:0,
-      quizNext:FIRST_QUIZ_AT, quizLog:[], lastGate:-10, nextMath:cannonQuestions(cfg.level,cfg.range,chapter.quizChoices),
-      giantNext:chapter.giantActive?8.5:99999, giantSide:0, giantStun:0,
-      enemies:[], props:[], propT:6, slots:[], over:false, zone:'C',
-      gates:{ L:{g:null,mesh:null,age:0,wait:0.8, born:0}, R:{g:null,mesh:null,age:0,wait:0.3, born:0} } };
-  const bg=new THREE.Group();
-  overlordFigure.group.parent && overlordFigure.group.parent.remove(overlordFigure.group);
-  warlordFigure.group.parent && warlordFigure.group.parent.remove(warlordFigure.group);
-  bg.add(warlordFigure.group);
-  bg.position.set(0,0,-28); scene.add(bg);
-  const bl=textSprite(String(bossHP),{size:96,h:1.8,minChars:4}); bl.position.set(0,7.2,0); bg.add(bl);
-  G.boss={grp:bg,fig:warlordFigure,hp:bossHP,max:bossHP,label:bl,z:-28,flash:0};
-  G.armyLabel=textSprite(String(startArmy),{size:110,h:1.6,minChars:4}); scene.add(G.armyLabel);
-  for(let i=0;i<160;i++) G.slots.push({x:0,z:L.SQUAD_Z});
-  for(let i=0;i<S.horde;i++) pushEnemy(-2.8+(i%6)*1.12+(Math.random()-.5)*0.3, -25.4+Math.floor(i/6)*0.42);
-  document.getElementById('lvlName').textContent = chapter.hudName;
-  updateHud();
 }
 function updateHud(){
   document.getElementById('lvl').textContent='武器：'+WEAPONS[G.level];
   document.getElementById('lvl').classList.toggle('crossbow',G.level>=2);
   document.getElementById('score').textContent=`正確 ${G.good} / ${G.total}`;
+  updateSiegeBar();
 }
+
+function startStageCombat(stageIdx){
+  G.stageIdx = stageIdx;
+  G.stagePhase = 'combat';
+  G.phaseT = 0;
+  G.giants.forEach(g=>scene.remove(g.grp));
+  G.giants.length = 0;
+  G.enemies.length = 0;
+  G.props.forEach(p=>scene.remove(p.grp));
+  G.props.length = 0;
+  clearGate('L'); clearGate('R');
+  G.gates.L.wait = 0.8; G.gates.R.wait = 0.3;
+  G.propT = 6;
+  G.spawn = 0;
+
+  const st = STAGES[stageIdx];
+  const S = G.S;
+  landscape.setScroll(stageIdx * landscape.WALL_SPACING);
+  landscape.blendStageTheme(stageIdx + 1, stageIdx + 1, 1);
+  camera.position.copy(HOME_CAM_POS);
+  camera.lookAt(HOME_CAM_LOOK);
+
+  // 依序建立該層所有不同造型巨人（前後列陣）
+  st.giants.forEach((def, idx)=>{
+    if (def.fig.group.parent) def.fig.group.parent.remove(def.fig.group);
+    const grp = new THREE.Group();
+    grp.add(def.fig.group);
+    grp.position.set(def.x, 0, def.z);
+    scene.add(grp);
+    const hp = Math.round(S.bossHP * def.hpMul);
+    const lbl = textSprite(String(hp), {size:96, h:1.6, minChars:4});
+    lbl.position.set(0, 6.3 + idx * 0.4, 0);
+    grp.add(lbl);
+    G.giants.push({
+      fig: def.fig, name: def.name, grp, label: lbl,
+      hp, max: hp, x: def.x, z: def.z, flash: 0
+    });
+  });
+
+  // 生成該層初始敵兵波次
+  const initHorde = Math.min(ENEMY_LIMIT - 20, Math.round(S.horde * st.hordeMul));
+  for (let i=0; i<initHorde; i++){
+    pushEnemy(-2.8+(i%6)*1.12+(Math.random()-.5)*0.3, -23.0 - Math.floor(i/6)*0.45);
+  }
+
+  // 更新答題大炮題庫（第三層進階改為三選一）
+  const opMode = activeOpMode();
+  const choiceCount = (stageIdx===2 && cfg.mathMode!=='addsub') ? 3 : 2;
+  G.nextMath = cannonQuestions(opMode==='addsub' ? 'addsub' : 'mul', cfg.range, choiceCount);
+  G.quizNext = G.t + 4.5;
+
+  document.getElementById('lvlName').textContent = st.name;
+  updateHud();
+  if (stageIdx === 1) showBanner('第二埲牆：寒冰與聖翼雙巨人前後逼近！', 2500);
+  if (stageIdx === 2) showBanner('最終內城：三巨頭列陣守門！', 2600);
+}
+
+function newGame(startStage = 0){
+  clearQuiz(); dragging=false;
+  clearTimeout(bannerTimer);
+  const bannerEl=document.getElementById('stageBanner'); if(bannerEl) bannerEl.classList.remove('show');
+  if (G){
+    clearWorldActors();
+    scene.remove(G.armyLabel);
+    floats.forEach(f=>scene.remove(f.sp)); floats.length=0;
+  }
+  landscape.reset();
+  const S=SPEEDS[cfg.speed];
+  const startArmy = cfg.range * 2;
+  G={
+    S, stageIdx: startStage, stagePhase:'combat', phaseT:0,
+    advanceFromZ:0, advanceToZ:0, princessSpoke:false,
+    t:0, army:startArmy, maxArmy:startArmy, sx:0, tx:0,
+    level: Math.min(2, startStage), volley:0, spawn:0, log:[], good:0, total:0,
+    quizNext:FIRST_QUIZ_AT, quizLog:[], lastGate:-10, nextMath:null,
+    enemies:[], props:[], propT:6, slots:[], giants:[], over:false, zone:'C',
+    gates:{ L:{g:null,mesh:null,age:0,wait:0.8, born:0}, R:{g:null,mesh:null,age:0,wait:0.3, born:0} }
+  };
+  G.armyLabel=textSprite(String(startArmy),{size:110,h:1.6,minChars:4}); scene.add(G.armyLabel);
+  for(let i=0;i<160;i++) G.slots.push({x:0,z:L.SQUAD_Z});
+  startStageCombat(startStage);
+}
+
 function spawnGate(side){
   const other = G.gates[side==='L'?'R':'L'].g;
   const g=genGate(other);
@@ -600,7 +625,7 @@ function feedback(text, good){
   clearTimeout(fbTimer); fbTimer=setTimeout(()=>{ el.style.opacity=0; }, 1300);
 }
 function chooseGate(side){
-  const s=G.gates[side]; if(!s.g || s.z < GATE_Z-3) return;   // 門未到位不可選
+  const s=G.gates[side]; if(!s.g || s.z < GATE_Z-3) return;
   const o=G.gates[side==='L'?'R':'L'];
   const before=G.army, after=Math.max(0,Math.min(999,apply(before,s.g)));
   let best=true, better=null;
@@ -615,11 +640,20 @@ function chooseGate(side){
   const wx=SIDES[side].x;
   floatText(`${before}${opTxt.replace(/ /g,'')}=${after}`, Math.max(-4.2,Math.min(4.2,wx)), 4.4, GATE_Z, {size:110,h:1.5,color:'#fff',stroke:GATE_COL[s.g.label?'g':s.g.op][2],life:1.1,vy:2.2});
   burst(wx,2,GATE_Z, s.g.op==='−'?0xff8a80:0xffd23f, 22, 6);
-  if (best){ feedback(better===null && s.g.op==='−' ? '✓' : '✓ 好選擇！', true); beep(660,0.1); setTimeout(()=>beep(880,0.12),90);
+  if (best){
+    feedback(better===null && s.g.op==='−' ? '✓' : '✓ 好選擇！', true);
+    beep(660,0.1); setTimeout(()=>beep(880,0.12),90);
     if (G.good%5===0 && G.level<4){ G.level++; floatText('攻擊力 +20%',Math.max(-4,Math.min(4,G.sx)),3.4,L.SQUAD_Z,{size:96,h:1.4,color:'#ffd23f',stroke:'#8a3b00',life:1.6}); }
-  } else { feedback(better ? `另一邊 ${gText(better)} 會更多` : '士兵減少了！', false); beep(200,0.2,'sawtooth',0.04);
-    G.boss.hp = Math.min(G.boss.max, G.boss.hp + G.S.heal); setSpriteText(G.boss.label,String(Math.ceil(G.boss.hp)));
-    floatText('首領回復 +'+G.S.heal,0,7.5,G.boss.z,{size:96,h:1.3,color:'#ff6b6b',stroke:'#4a0000',life:1.4}); }
+  } else {
+    feedback(better ? `另一邊 ${gText(better)} 會更多` : '士兵減少了！', false);
+    beep(200,0.2,'sawtooth',0.04);
+    const front = G.giants[0];
+    if (front){
+      front.hp = Math.min(front.max, front.hp + G.S.heal);
+      setSpriteText(front.label, String(Math.ceil(front.hp)));
+      floatText(`${front.name}回復 +${G.S.heal}`, front.x, 7.4, front.z, {size:90,h:1.25,color:'#ff6b6b',stroke:'#4a0000',life:1.4});
+    }
+  }
   clearGate(side); s.wait=0.5;
   updateHud();
 }
@@ -636,20 +670,46 @@ function spawnProp(type){
     grp.add(armyArt.sprite('chest',2.0,1.6));
     hp = 60 + Math.round(G.army*0.7);
   }
-  const x=(Math.random()-.5)*3.6, z=G.boss.z+3.5;
+  const leadZ = G.giants[0] ? G.giants[0].z : -25;
+  const x=(Math.random()-.5)*3.6, z=Math.max(-27, leadZ+3.2);
   const label=textSprite(String(hp),{size:96,h:1.1,minChars:3}); label.position.set(0,type==='barrel'?2.9:2.0,0); grp.add(label);
   grp.position.set(x,0,z); scene.add(grp);
   G.props.push({type,grp,x,z,hp,label,flash:0});
 }
+
+function eliminateGiant(idx){
+  const g = G.giants[idx];
+  if (!g) return;
+  burst(g.x, 3.2, g.z, 0xffd23f, 55, 10);
+  burst(g.x, 3.8, g.z, 0x9effff, 30, 8);
+  scene.remove(g.grp);
+  G.giants.splice(idx, 1);
+  beep(150, 0.25, 'sawtooth', 0.08);
+  updateSiegeBar();
+  if (G.giants.length > 0){
+    showBanner(`擊倒 ${g.name}！後排 ${G.giants[0].name} 逼近！`, 2200);
+  } else if (G.stageIdx < 2) {
+    beginAdvance();
+  } else {
+    beginRescue();
+  }
+}
+
 function breakProp(p){
   scene.remove(p.grp); G.props.splice(G.props.indexOf(p),1);
   if (p.type==='barrel'){
-    let n=0; for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i]; if (Math.hypot(e.x-p.x,e.z-p.z)<4.2){ G.enemies.splice(i,1); n++; } }
+    let n=0; for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i]; if (Math.hypot(e.x-p.x,e.z-p.z)<4.4){ G.enemies.splice(i,1); n++; } }
     burst(p.x,1.5,p.z,0xff7a1a,50,10); burst(p.x,1.5,p.z,0xffe066,30,7);
-    G.boss.hp -= 40; setSpriteText(G.boss.label,String(Math.max(0,Math.ceil(G.boss.hp))));
+    for (let gi=G.giants.length-1; gi>=0; gi--){
+      const g=G.giants[gi];
+      if (Math.hypot(g.x-p.x, g.z-p.z)<6.5){
+        g.hp -= 65; g.flash=0.1;
+        setSpriteText(g.label, String(Math.max(0,Math.ceil(g.hp))));
+        if (g.hp<=0) eliminateGiant(gi);
+      }
+    }
     floatText(`轟！ 炸走 ${n} 個敵兵`,0,4,p.z,{size:96,h:1.4,color:'#ffb020',stroke:'#5a1a00',life:1.6});
     beep(90,0.35,'sawtooth',0.08);
-    if (G.boss.hp<=0){ if (G.chapter.dualBoss && G.bossPhase===1) summonOverlord(); else endGame(true); }
   } else {
     const bonus = Math.round(cfg.range/2);
     G.army=Math.min(999,G.army+bonus); G.maxArmy=Math.max(G.maxArmy,G.army);
@@ -659,24 +719,132 @@ function breakProp(p){
   }
 }
 
+function beginAdvance(){
+  clearQuiz(); dragging=false;
+  clearGate('L'); clearGate('R');
+  G.props.forEach(p=>scene.remove(p.grp)); G.props.length=0;
+  for (const a of arrows) a.on=false;
+  for (let i=0; i<G.enemies.length; i+=Math.max(1,Math.ceil(G.enemies.length/12))){
+    const e=G.enemies[i]; burst(e.x, 0.9, e.z, 0xffe066, 3, 5);
+  }
+  G.enemies.length = 0;
+
+  landscape.openWall(G.stageIdx);
+  playWallBreach();
+  showBanner(G.stageIdx===0 ? '攻破外城牆！全軍推進中城甕城！' : '攻破中城牆！殺入內城拯救公主！', 2500);
+
+  const minArmy = Math.round(cfg.range * 1.5);
+  if (G.army < minArmy){
+    const add = minArmy - G.army;
+    G.army = minArmy; G.maxArmy = Math.max(G.maxArmy, G.army);
+    floatText(`破城援軍 +${add}`, 0, 4.2, L.SQUAD_Z, {size:96,h:1.4,color:'#9efffa',stroke:'#0c3f58',life:1.8});
+  }
+  G.stagePhase = 'advance';
+  G.phaseT = 0;
+  G.advanceFromZ = G.stageIdx * landscape.WALL_SPACING;
+  G.advanceToZ = (G.stageIdx + 1) * landscape.WALL_SPACING;
+  updateSiegeBar();
+}
+
+function stepAdvance(dt){
+  G.t += dt; G.phaseT += dt;
+  const dur = 2.5;
+  const p = Math.min(1, G.phaseT / dur);
+  const ease = p * p * (3 - 2 * p);
+  landscape.setScroll(G.advanceFromZ + (G.advanceToZ - G.advanceFromZ) * ease);
+  landscape.blendStageTheme(G.stageIdx + 1, G.stageIdx + 2, ease);
+
+  G.tx = 0; G.sx += (0 - G.sx) * Math.min(1, dt * 8);
+  const shown = Math.min(G.army, 160);
+  for(let i=0;i<shown;i++){
+    const r=0.31*Math.sqrt(i), th=i*2.39996, s=G.slots[i];
+    const tx=G.sx+Math.cos(th)*r, tz=L.SQUAD_Z+Math.sin(th)*r*0.8;
+    s.x+=(tx-s.x)*Math.min(1,dt*8); s.z+=(tz-s.z)*Math.min(1,dt*8);
+  }
+  if (!reducedMotion.matches){
+    const swoop = Math.sin(p * Math.PI);
+    camera.position.set(0, 21 - 5.5 * swoop, 17 - 4.5 * swoop);
+    lookTmp.set(0, 1.5 * swoop, -9 - 4 * swoop);
+    camera.lookAt(lookTmp);
+  }
+  if (p >= 1) startStageCombat(G.stageIdx + 1);
+}
+
+function beginRescue(){
+  clearQuiz(); dragging=false;
+  clearGate('L'); clearGate('R');
+  G.props.forEach(p=>scene.remove(p.grp)); G.props.length=0;
+  for (const a of arrows) a.on=false;
+  for (let i=0; i<G.enemies.length; i+=Math.max(1,Math.ceil(G.enemies.length/14))){
+    const e=G.enemies[i]; burst(e.x, 0.9, e.z, 0xffe066, 4, 5);
+  }
+  G.enemies.length = 0;
+
+  landscape.openWall(2);
+  if (princessFig.group.parent) princessFig.group.parent.remove(princessFig.group);
+  princessFig.group.position.set(0, 0, -33);
+  scene.add(princessFig.group);
+
+  G.stagePhase = 'rescue';
+  G.phaseT = 0;
+  G.princessSpoke = false;
+  playVictoryFanfare();
+  showBanner('攻破三道城牆！成功救出王國公主！', 1800);
+  document.getElementById('lvlName').textContent = '勝利凱旋・拯救公主';
+  updateSiegeBar();
+}
+
+function stepRescue(dt){
+  G.t += dt; G.phaseT += dt;
+  const dur = 3.4;
+  const p = Math.min(1, G.phaseT / dur);
+  const ease = p * p * (3 - 2 * p);
+  landscape.blendStageTheme(3, 4, ease);
+
+  const pz = -33 + 17.5 * ease;
+  princessFig.group.position.set(0, 0, pz);
+  princessFig.pose(camera, G.phaseT * 7, reducedMotion.matches ? 0 : 0.85);
+
+  if (p > 0.54 && !G.princessSpoke){
+    G.princessSpoke = true;
+    floatText('謝謝你們救出我！', 0, 4.4, -16, {size:96,h:1.4,color:'#fff3b0',stroke:'#8a4400',life:2.3,vy:0.8});
+    burst(0, 3.2, -16, 0xffe066, 48, 8);
+  }
+
+  G.tx = 0; G.sx += (0 - G.sx) * Math.min(1, dt * 8);
+  const shown = Math.min(G.army, 160);
+  for(let i=0;i<shown;i++){
+    const r=0.31*Math.sqrt(i), th=i*2.39996, s=G.slots[i];
+    const tx=G.sx+Math.cos(th)*r, tz=L.SQUAD_Z+Math.sin(th)*r*0.8;
+    s.x+=(tx-s.x)*Math.min(1,dt*8); s.z+=(tz-s.z)*Math.min(1,dt*8);
+  }
+
+  if (!reducedMotion.matches){
+    camera.position.set(0, 21 + (6.4 - 21) * ease, 17 + (11.8 - 17) * ease);
+    lookTmp.set(0, 2.4 * ease, -9 + (-14 - (-9)) * ease);
+    camera.lookAt(lookTmp);
+  }
+  if (p >= 1) endGame(true);
+}
+
 // ---------------- 操控 ----------------
 const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), plane=new THREE.Plane(new THREE.Vector3(0,1,0),0), hit=new THREE.Vector3();
 let dragging=false, dragStartX=0, dragStartTx=0;
 function setRay(cx,cy){ ndc.set(cx/innerWidth*2-1, -(cy/innerHeight)*2+1); ray.setFromCamera(ndc,camera); }
 function worldXAt(cx,cy){ setRay(cx,cy); return ray.ray.intersectPlane(plane,hit) ? hit.x : 0; }
 canvas.addEventListener('pointerdown',e=>{
-  if(!G || !running || paused || quiz) return;
+  if(!G || !running || paused || quiz || G.stagePhase!=='combat') return;
   document.getElementById('hint').style.display='none';
   setRay(e.clientX,e.clientY);
   for (const side of ['L','R']){ const s=G.gates[side]; if(!s.mesh) continue;
     if (ray.intersectObject(s.mesh.grp,true).length){ G.tx = SIDES[side].x; chooseGate(side); return; } }
   dragging=true; dragStartX=worldXAt(e.clientX,e.clientY); dragStartTx=G.tx; canvas.setPointerCapture(e.pointerId);
 });
-canvas.addEventListener('pointermove',e=>{ if(!dragging || !G || paused || quiz) return; const x=worldXAt(e.clientX,e.clientY); G.tx=Math.max(-6.8,Math.min(6.8, dragStartTx+(x-dragStartX)*1.1)); });
+canvas.addEventListener('pointermove',e=>{ if(!dragging || !G || paused || quiz || G.stagePhase!=='combat') return; const x=worldXAt(e.clientX,e.clientY); G.tx=Math.max(-6.8,Math.min(6.8, dragStartTx+(x-dragStartX)*1.1)); });
 const endDrag=()=>{dragging=false;}; canvas.addEventListener('pointerup',endDrag); canvas.addEventListener('pointercancel',endDrag);
-addEventListener('keydown',e=>{ if(!G || !running || paused || quiz) return; if(e.key==='ArrowLeft') G.tx=Math.max(-6.8,G.tx-3); if(e.key==='ArrowRight') G.tx=Math.min(6.8,G.tx+3); });
+addEventListener('keydown',e=>{ if(!G || !running || paused || quiz || G.stagePhase!=='combat') return; if(e.key==='ArrowLeft') G.tx=Math.max(-6.8,G.tx-3); if(e.key==='ArrowRight') G.tx=Math.min(6.8,G.tx+3); });
 
-// ---------------- 主循環 ----------------
+// ---------------- 戰鬥主循環 ----------------
 function squadRadius(){ return 0.31*Math.sqrt(Math.min(G.army,160))+0.35; }
 function fire(dt){
   G.volley-=dt; if (G.volley>0) return;
@@ -694,6 +862,8 @@ function step(dt){
   const protectedTime=!!quiz;
   if (protectedTime) dt*=.25;
   const S=G.S; G.t+=dt;
+  const st = STAGES[G.stageIdx];
+
   G.sx += (G.tx-G.sx)*Math.min(1,dt*10);
   const shown=Math.min(G.army,160);
   for(let i=0;i<shown;i++){ const r=0.31*Math.sqrt(i), th=i*2.39996; const s=G.slots[i];
@@ -701,7 +871,6 @@ function step(dt){
     s.x+=(tx-s.x)*Math.min(1,dt*8); s.z+=(tz-s.z)*Math.min(1,dt*8); }
   if (!protectedTime) {
     fire(dt);
-    // 選擇門：滑入、倒數、消失
     for (const side of ['L','R']){ const s=G.gates[side];
       if (!s.g){ s.wait-=dt; if (s.wait<=0) spawnGate(side); continue; }
       s.z += (GATE_Z - s.z)*Math.min(1,dt*7); s.mesh.grp.position.z=s.z;
@@ -710,63 +879,61 @@ function step(dt){
         s.mesh.bar.material.color.setHex(k<0.35?0xff5a3a:0xffd23f);
         if (s.age>=S.life){ expireGate(side); } }
     }
-    // 行入左右步道 = 選擇該邊的門（要先返回中間才可再選）
     const zone = G.sx < -3.9 ? 'L' : G.sx > 3.9 ? 'R' : 'C';
     if (zone!==G.zone){ if (zone!=='C') chooseGate(zone); G.zone=zone; }
   }
-  // 逐步補充橋上的敵兵，預留空間給已越過橋口的敵兵。
-  const target = Math.min(ENEMY_LIMIT-18, Math.floor(S.horde+G.t*0.85));
+
+  // 逐步補充庭院內敵兵
+  const target = Math.min(ENEMY_LIMIT-18, Math.floor(S.horde*st.hordeMul + G.t*0.75));
   G.spawn+=dt*S.refill;
   let inLane=0;
   for(const enemy of G.enemies) if(enemy.z<L.EXIT) inLane++;
+  const leadZ = G.giants[0] ? G.giants[0].z : -25;
   while(G.spawn>=1){
     const waveSize=Math.min(6,target-inLane,ENEMY_LIMIT-G.enemies.length);
     if(waveSize<=0){G.spawn=0;break;}
     G.spawn--;
     const firstColumn=R(0,6-waveSize);
     for(let k=0;k<waveSize;k++){
-      pushEnemy(-2.8+(firstColumn+k)*1.12+(Math.random()-.5)*.3, G.boss.z+2.6+Math.random()*2.5);
+      pushEnemy(-2.8+(firstColumn+k)*1.12+(Math.random()-.5)*.3, Math.max(-29, leadZ+2.6)+Math.random()*2.3);
     }
     inLane+=waveSize;
   }
-  // 第二／三章：左右兩側巨人召喚增援（被機關炮壓制期間暫停）
-  if (!protectedTime && G.chapter.giantActive){
-    if (G.giantStun > 0) {
-      G.giantStun = Math.max(0, G.giantStun - dt);
-    } else if (G.t >= G.giantNext) {
-      G.giantNext = G.t + G.chapter.giantGap;
-      const sideIdx = G.giantSide; G.giantSide = 1 - G.giantSide;
-      const gp = landscape.getGiantPos(sideIdx);
-      landscape.pulseGiant(sideIdx, 0xd88cff);
-      const spawnZ = Math.max(-24, Math.min(L.EXIT - 3, gp.z + 1.5));
-      for (let k=0; k<4; k++) {
-        pushEnemy((sideIdx===0?-2.2:1.2)+k*0.42+(Math.random()-.5)*0.25, spawnZ+Math.random()*1.2, k<2?'shield':'raider');
-      }
-      floatText('巨人召喚援軍！', sideIdx===0?-3.0:3.0, 4.8, Math.max(-20, gp.z), {size:96,h:1.35,color:'#e5b8ff',stroke:'#3a0e68',life:1.5});
-      beep(310,0.16,'triangle',0.06);
-    }
-  }
-  // 中路道具：炸藥桶（射爆清走附近敵兵）、寶箱（射爆加士兵）
+
+  // 中路道具：炸藥桶與寶箱
   G.propT-=dt;
   if (G.propT<=0){ G.propT = R(9,14); spawnProp(Math.random()<0.5 ? 'barrel' : 'chest'); }
   for (let i=G.props.length-1;i>=0;i--){ const p=G.props[i]; p.z += S.hordeSpeed*dt; p.grp.position.z=p.z;
     p.grp.rotation.y = p.type==='chest' ? Math.sin(G.t*2)*0.2 : 0;
     if (p.z > L.EXIT){ scene.remove(p.grp); G.props.splice(i,1); } }
-  G.boss.z += S.bossSpeed*dt; G.boss.grp.position.z=G.boss.z; G.boss.grp.rotation.y=Math.sin(G.t*1.5)*0.08;
+
+  // 多造型巨人前後列陣推進
+  for (let gi=0; gi<G.giants.length; gi++){
+    const g=G.giants[gi];
+    g.z += S.bossSpeed*dt;
+    if (gi>0) g.z = Math.min(g.z, G.giants[gi-1].z - 5.2);
+    g.grp.position.set(g.x, 0, g.z);
+    g.grp.rotation.y = Math.sin(G.t*1.5 + gi)*0.08;
+    if (g.z > L.EXIT - 1.5) return endGame(false);
+  }
+
+  // 敵兵推進
   const rad=squadRadius();
   for (let i=G.enemies.length-1;i>=0;i--){ const e=G.enemies[i];
     const spdScale = e.kind==='shield' ? 0.85 : 1;
-    if (e.z < L.EXIT) { e.z += S.hordeSpeed*spdScale*dt*(e.z > G.boss.z+12 ? 1.6 : 1); e.x=Math.max(-3,Math.min(3,e.x)); }
+    if (e.z < L.EXIT) { e.z += S.hordeSpeed*spdScale*dt*(e.z > leadZ+12 ? 1.6 : 1); e.x=Math.max(-3,Math.min(3,e.x)); }
     else { e.z += S.enemySpeed*spdScale*dt*0.7; }
-    if (e.z < L.EXIT) {}
-    else { const dx=G.sx-e.x, dz=L.SQUAD_Z-e.z, d=Math.hypot(dx,dz)||1;
+    if (e.z >= L.EXIT) {
+      const dx=G.sx-e.x, dz=L.SQUAD_Z-e.z, d=Math.hypot(dx,dz)||1;
       e.x+=dx/d*S.enemySpeed*spdScale*dt*0.9; e.z+=dz/d*S.enemySpeed*spdScale*dt*0.3;
-      if (!protectedTime && d < rad+0.3){ G.enemies.splice(i,1); G.army-=1; burst(e.x,0.8,e.z,0xffffff,6,3); beep(180,0.06,'sawtooth',0.03); continue; } }
+      if (!protectedTime && d < rad+0.3){ G.enemies.splice(i,1); G.army-=1; burst(e.x,0.8,e.z,0xffffff,6,3); beep(180,0.06,'sawtooth',0.03); continue; }
+    }
     if (e.z > L.SQUAD_Z+6) G.enemies.splice(i,1);
   }
-  // 箭矢（左右步道的箭不會打門；只有中路有效）
+
+  // 箭矢命中檢查
   if (protectedTime) return;
-  const bossZ=G.boss.z, dmg=1+G.level*0.25;
+  const dmg=1+G.level*0.25;
   for (const a of arrows){ if(!a.on) continue;
     a.z -= 46*dt;
     if (a.z < -95){ a.on=false; continue; }
@@ -781,23 +948,28 @@ function step(dt){
       if (e.hp<=0){ G.enemies.splice(hitE,1); burst(e.x,0.8,e.z,e.kind==='shield'?0x9ec8ff:0xffe066,6,3.5); }
       else if (e.kind==='shield'){ burst(e.x,0.95,e.z,0xcbe7ff,2,2.5); }
       continue; }
-    if (Math.abs(a.x)<2.6 && a.z < bossZ+1.2){ a.on=false; G.boss.hp-=dmg; G.boss.flash=0.06;
-      setSpriteText(G.boss.label,String(Math.max(0,Math.ceil(G.boss.hp))));
-      if (G.boss.hp<=0) {
-        if (G.chapter.dualBoss && G.bossPhase===1) summonOverlord();
-        else return endGame(true);
-      } }
+    for (let gi=0; gi<G.giants.length; gi++){
+      const g=G.giants[gi];
+      if (Math.abs(a.x - g.x) < 2.25 && a.z < g.z + 1.2 && a.z > g.z - 2.4){
+        a.on=false; g.hp-=dmg; g.flash=0.06;
+        setSpriteText(g.label, String(Math.max(0,Math.ceil(g.hp))));
+        if (g.hp <= 0) eliminateGiant(gi);
+        break;
+      }
+    }
+    if (G.stagePhase !== 'combat') return;
   }
   if (G.army<=0){ G.army=0; return endGame(false); }
-  if (G.boss.z > L.EXIT-1.5) return endGame(false);
 }
 
 function render(dt){
   if (G){
     const shown=Math.min(G.army,160);
-    for(let i=0;i<shown;i++){ const s=G.slots[i]; const bob=Math.abs(Math.sin(G.t*9+i))*0.06;
+    const marchMul = G.stagePhase==='combat' ? 1 : 1.75;
+    for(let i=0;i<shown;i++){ const s=G.slots[i]; const bob=Math.abs(Math.sin(G.t*9*marchMul+i))*0.06;
       armyArt.soldier(camera,blueArmy,i,s.x,s.z,bob); }
     armyArt.flush(blueArmy,shown);
+
     let nr=0, ns=0;
     for(let i=0;i<G.enemies.length;i++){
       const e=G.enemies[i];
@@ -807,15 +979,22 @@ function render(dt){
     }
     armyArt.flush(redArmy,nr);
     armyArt.flush(shieldArmy,ns);
-    const showBattleLabels = quiz?.phase!=='shot' || reducedMotion.matches;
-    G.boss.label.visible=G.armyLabel.visible=showBattleLabels;
-    for (const prop of G.props) prop.label.visible=showBattleLabels;
-    const bossTravel = G.boss.z + 28;
-    landscape.animate(camera, G.t, bossTravel, reducedMotion.matches, dt);
-    G.boss.fig.pose(camera, bossTravel * 10, reducedMotion.matches ? 0 : 1);
+
+    const showBattleLabels = (quiz?.phase!=='shot' || reducedMotion.matches) && G.stagePhase==='combat';
+    G.armyLabel.visible = G.stagePhase==='combat' ? showBattleLabels : true;
+    for (const prop of G.props) prop.label.visible = showBattleLabels;
+
+    for (let gi=0; gi<G.giants.length; gi++){
+      const g=G.giants[gi];
+      g.label.visible = showBattleLabels;
+      g.fig.pose(camera, (g.z + 32) * 8.5, reducedMotion.matches ? 0 : 1);
+      g.fig.body.material.color.setHex(g.flash>0 ? 0xffc6a1 : 0xffffff);
+      g.flash -= dt;
+    }
+
+    landscape.animate(camera, G.t, reducedMotion.matches, dt);
     setSpriteText(G.armyLabel,String(G.army));
     G.armyLabel.position.set(G.sx, 2.4+squadRadius()*0.2, L.SQUAD_Z-squadRadius()-0.5);
-    G.boss.fig.body.material.color.setHex(G.boss.flash>0?0xffc6a1:0xffffff); G.boss.flash-=dt;
     for (const side of ['L','R']){ const s=G.gates[side]; if(s.mesh) s.mesh.lab.position.y=2.1+Math.sin(G.t*5)*0.06; }
   }
   let ai=0; for (const a of arrows){ if(!a.on) continue; dummy.position.set(a.x,a.y,a.z); dummy.rotation.set(0,0,0); dummy.updateMatrix(); arrowMesh.setMatrixAt(ai++,dummy.matrix); }
@@ -830,6 +1009,7 @@ function render(dt){
   renderer.render(scene,camera);
 }
 
+// ---------------- 答題大炮 ----------------
 const quizCard=document.getElementById('quizCard');
 const quizButtons=[...document.querySelectorAll('#quizChoices button')];
 let quiz=null;
@@ -838,7 +1018,7 @@ function clearQuiz(){
   document.body.classList.remove('cannon-firing','cannon-burst');
 }
 function offerQuiz(){
-  if(!cfg.quizSeconds || !G.total || G.t<G.quizNext || dragging ||
+  if(!cfg.quizSeconds || G.stagePhase!=='combat' || !G.total || G.t<G.quizNext || dragging ||
       Math.abs(G.tx-G.sx)>.12 || G.t-G.lastGate<1.4 || G.enemies.length<3) return;
   const q=G.nextMath();
   quiz={q,phase:'question',remaining:cfg.quizSeconds,deadline:null,age:0};
@@ -857,7 +1037,7 @@ function offerQuiz(){
   beep(660,.12,'sine');
 }
 function answerQuiz(value){
-  if(!quiz || quiz.phase!=='question' || paused || !running) return;
+  if(!quiz || quiz.phase!=='question' || paused || !running || G.stagePhase!=='combat') return;
   if(quiz.deadline!==null && performance.now()>=quiz.deadline) value=null;
   const q=quiz.q, correct=value===q.answer;
   G.quizLog.push({expression:q.expression,answer:q.answer,chosen:value});
@@ -871,11 +1051,6 @@ function answerQuiz(value){
     cannon.start(G,reducedMotion.matches);
     document.body.classList.add('cannon-firing');
     playCannonSpinUp();
-    if(G.chapter.giantActive){
-      G.giantStun=7;
-      landscape.setGiantStun(7);
-      floatText('雙巨人遭到壓制！',0,5.2,-16,{size:96,h:1.4,color:'#9efffa',stroke:'#0c3f58',life:1.6});
-    }
   }else beep(300,.12,'sine');
 }
 quizButtons.forEach((b,i)=>b.addEventListener('click',()=>{if(quiz) answerQuiz(quiz.q.options[i]);}));
@@ -897,9 +1072,7 @@ function quizTick(now,dt){
         $('quizResult').textContent='機關炮全力掃射！';
         burst(origin.x,origin.y,origin.z,0x9effff,16,5);
       },
-      onShot:()=>{
-        playGatlingBeat();
-      },
+      onShot:()=>playGatlingBeat(),
       onEliminate:(batch,killedCount,totalTargets)=>{
         const step=Math.max(1,Math.ceil(batch.length/4));
         let sampled=0;
@@ -913,6 +1086,14 @@ function quizTick(now,dt){
       onFinishFire:totalKilled=>{
         document.body.classList.remove('cannon-burst');
         playCannonCooldown();
+        if (G.giants.length > 0){
+          for (let gi=0; gi<G.giants.length; gi++){
+            const g=G.giants[gi];
+            g.z = Math.max(-34, g.z - 1.5);
+            g.grp.position.z = g.z;
+          }
+          floatText('機關炮震退巨人！', 0, 5.4, G.giants[0].z, {size:90,h:1.3,color:'#9efffa',stroke:'#0c3f58',life:1.5});
+        }
         $('quizResult').textContent='掃射完成！擊退 '+totalKilled+' 名敵兵';
       }
     });
@@ -934,87 +1115,88 @@ function reviewQuiz(){
     return item;
   }));
 }
+
 let last=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
   if (G && running && !paused && !G.over) {
-    if(quiz?.phase!=='shot') step(dt);
-    if(running) quizTick(now,dt);
+    if (G.stagePhase==='combat'){
+      if(quiz?.phase!=='shot') step(dt);
+      if(running && G.stagePhase==='combat') quizTick(now,dt);
+    } else if (G.stagePhase==='advance'){
+      stepAdvance(dt);
+    } else if (G.stagePhase==='rescue'){
+      stepRescue(dt);
+    }
   }
   render((running&&!paused)?dt:0);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-// ---------------- 介面 ----------------
+// ---------------- 介面控制 ----------------
 const $=id=>document.getElementById(id);
 function openStory(){
-  const ch = CHAPTERS[cfg.level] || CHAPTERS['1'];
-  $('storyBadge').textContent = ch.badge;
-  $('storyTitle').textContent = ch.title;
-  $('storyEnemy').src = ch.enemyImg;
-  $('storyEnemy').alt = ch.title + '敵方強敵';
-  $('storyText').textContent = ch.story;
-  $('storyTip').textContent = ch.tip;
-  landscape.setTheme(cfg.level);
   $('menu').style.display='none';
   $('endMenu').style.display='none';
   $('storyOverlay').style.display='flex';
 }
-function start(){
+function start(stage = 0){
   try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); actx.resume&&actx.resume(); }catch(e){}
-  try{ localStorage.setItem('armyMathCfg2',JSON.stringify(cfg)); }catch(e){}
-  newGame(); running=true; paused=false;
+  try{ localStorage.setItem('armyMathCfg3',JSON.stringify(cfg)); }catch(e){}
+  newGame(stage); running=true; paused=false;
   $('menu').style.display='none'; $('storyOverlay').style.display='none'; $('endMenu').style.display='none';
   $('pauseBtn').style.display='block';
+  $('siegeBar').style.display='flex';
   $('hint').style.display='block';
 }
 function endGame(win){
-  clearQuiz(); reviewQuiz();
+  clearQuiz();
   G.over=true; running=false; $('pauseBtn').style.display='none';
   if (win){
-    saveMedal(cfg.level);
-    burst(0,4,G.boss.z,0xffd23f,60,10); scene.remove(G.boss.grp);
-    beep(523,0.15); setTimeout(()=>beep(659,0.15),150); setTimeout(()=>beep(784,0.3),300);
+    saveRescue(true, G.maxArmy);
+    burst(0,4,-16,0xffd23f,60,10);
+  } else {
+    saveRescue(false, G.maxArmy);
+    beep(160,0.4,'sawtooth',0.05);
   }
-  else beep(160,0.4,'sawtooth',0.05);
+  reviewQuiz();
   setTimeout(()=>{
-    const ch = G.chapter;
-    const allWon = ['1','2','3'].every(k=>medals[k]);
-    $('endTitle').textContent = win
-      ? (cfg.level==='3' ? '全章通關！成功守護王國！' : `${ch.title}・勝利！`)
-      : (G.army<=0 ? '軍隊全軍覆沒' : '首領衝過來了');
-    const medalEl=$('endMedal');
-    if (win) {
-      medalEl.hidden=false;
-      medalEl.textContent = allWon && cfg.level==='3'
-        ? `獲得 ${ch.medalName} ・ 集齊三枚勳章！`
-        : `獲得 ${ch.medalName}`;
+    $('siegeBar').style.display='none';
+    const castEl = $('endCast'), medalEl = $('endMedal'), retryBtn = $('retryStageBtn'), againBtn = $('againBtn');
+    if (win){
+      $('endTitle').textContent = '成功救出王國公主！';
+      castEl.hidden = false;
+      medalEl.hidden = false;
+      medalEl.textContent = `👑 連破三道城牆・第 ${rescueStat.rescued} 次成功營救公主！`;
+      retryBtn.hidden = true;
+      againBtn.className = 'big blue';
     } else {
-      medalEl.hidden=true;
-    }
-    const nextBtn=$('nextChapterBtn');
-    const hasNext = win && (cfg.level==='1' || cfg.level==='2');
-    nextBtn.hidden=!hasNext;
-    if (hasNext) {
-      const nextLv = cfg.level==='1' ? '2' : '3';
-      nextBtn.textContent = `進入下一章（第${nextLv==='2'?'二':'三'}章・${CHAPTERS[nextLv].title}）`;
-      nextBtn.onclick = () => {
-        cfg.level = nextLv;
-        syncOptionButtons();
-        openStory();
-      };
+      const stageNames = ['第一埲外城牆', '第二埲中城牆', '第三埲內城牆'];
+      $('endTitle').textContent = G.army<=0 ? `全軍覆沒（${stageNames[G.stageIdx]}）` : `巨人攻破防線（${stageNames[G.stageIdx]}）`;
+      castEl.hidden = true;
+      medalEl.hidden = true;
+      const canRetryStage = G.stageIdx > 0;
+      retryBtn.hidden = !canRetryStage;
+      if (canRetryStage){
+        retryBtn.textContent = `重試第${['一','二','三'][G.stageIdx]}道城牆`;
+        retryBtn.onclick = () => start(G.stageIdx);
+        againBtn.className = 'big';
+      } else {
+        againBtn.className = 'big blue';
+      }
     }
     $('stMax').textContent=G.maxArmy; $('stAcc').textContent=`${G.good}/${G.total}`; $('stTime').textContent=Math.round(G.t);
     $('log').innerHTML = G.log.length ? G.log.slice(-40).map(l=>`<div class="${l.best?'ok':'no'}">${l.best?'✓':'✗'} ${l.line}${l.better?`（揀 ${l.better} 會更多）`:''}</div>`).join('') : '<div>未有選擇任何門</div>';
     $('endMenu').style.display='flex';
-  }, win?900:600);
+  }, win?650:600);
 }
 $('startBtn').onclick=openStory;
-$('storyGoBtn').onclick=start;
+$('storyGoBtn').onclick=()=>start(0);
 $('storyBackBtn').onclick=()=>{ $('storyOverlay').style.display='none'; $('menu').style.display='flex'; };
-$('againBtn').onclick=start;
-$('homeBtn').onclick=()=>{ $('endMenu').style.display='none'; $('menu').style.display='flex'; };
+$('againBtn').onclick=()=>start(0);
+$('homeBtn').onclick=()=>{ $('endMenu').style.display='none'; $('siegeBar').style.display='none'; $('menu').style.display='flex'; };
+
 function pauseGame(){
   if(!running || paused) return;
   if(quiz?.phase==='question' && quiz.deadline!==null){
@@ -1025,8 +1207,8 @@ function pauseGame(){
 $('pauseBtn').onclick=pauseGame;
 document.addEventListener('visibilitychange',()=>{if(document.hidden && cfg.quizSeconds) pauseGame();});
 $('resumeBtn').onclick=()=>{ paused=false; $('pauseMenu').style.display='none'; };
-$('quitBtn').onclick=()=>{ clearQuiz(); paused=false; running=false; $('pauseMenu').style.display='none'; $('pauseBtn').style.display='none'; $('menu').style.display='flex'; };
-newGame();
+$('quitBtn').onclick=()=>{ clearQuiz(); paused=false; running=false; $('pauseMenu').style.display='none'; $('pauseBtn').style.display='none'; $('siegeBar').style.display='none'; newGame(0); $('menu').style.display='flex'; };
+newGame(0);
 })();
 </script>
 </body>

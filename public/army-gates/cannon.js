@@ -10,7 +10,7 @@ function cannonQuestions(level, limit, choiceCount = 2) {
     return items;
   }
   return () => {
-    if (!operations.length) operations=shuffle((level==='2'||level==='3') ? ['＋','−','×'] : ['＋','−']);
+    if (!operations.length) operations=shuffle((level==='addsub'||level==='1') ? ['＋','−'] : ['＋','−','×']);
     const op=operations.pop();
     if (!decks.get(op)?.length) {
       const items=[];
